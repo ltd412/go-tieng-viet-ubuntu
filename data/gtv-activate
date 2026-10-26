@@ -1,0 +1,151 @@
+#!/usr/bin/python3
+"""Restarts IBus and makes Gõ Tiếng Việt the selected input source for one desktop user.
+
+    gtv-activate [user]        # default: the calling user
+    gtv-activate --dry-run     # print what would run
+
+Run by the installer and by the .deb postinst. It never fails the install: when the user has no
+graphical session (or is not on GNOME) it only says what to do by hand.
+"""
+import ast
+import os
+import pwd
+import subprocess
+import sys
+import time
+
+ENGINE = "gtv-telex"
+OURS = {"gtv-telex", "gtv-vni"}
+SCHEMA = "org.gnome.desktop.input-sources"
+DRY = "--dry-run" in sys.argv
+
+
+def say(msg):
+    print(f"gtv-activate: {msg}", flush=True)
+
+
+def session_env(pw):
+    runtime = f"/run/user/{pw.pw_uid}"
+    env = {
+        "HOME": pw.pw_dir,
+        "USER": pw.pw_name,
+        "LOGNAME": pw.pw_name,
+        "XDG_RUNTIME_DIR": runtime,
+        "DBUS_SESSION_BUS_ADDRESS": f"unix:path={runtime}/bus",
+    }
+    # DISPLAY decides which ibus-daemon `ibus` talks to; copy it from the user's own daemon.
+    for pid in filter(str.isdigit, os.listdir("/proc")):
+        try:
+            if os.stat(f"/proc/{pid}").st_uid != pw.pw_uid:
+                continue
+            if open(f"/proc/{pid}/comm").read().strip() != "ibus-daemon":
+                continue
+            for item in open(f"/proc/{pid}/environ", "rb").read().split(b"\0"):
+                k, _, v = item.decode(errors="replace").partition("=")
+                if k in ("DISPLAY", "WAYLAND_DISPLAY", "XAUTHORITY", "XDG_SESSION_TYPE"):
+                    env[k] = v
+            break
+        except OSError:
+            continue
+    env.setdefault("DISPLAY", ":0")
+    return env
+
+
+def runner(pw, env):
+    as_other = os.getuid() == 0 and pw.pw_uid != 0
+
+    def run(*cmd, timeout=20):
+        if DRY:
+            say("sẽ chạy: " + " ".join(cmd))
+            return 0, ""
+        if as_other:
+            full = ["runuser", "-u", pw.pw_name, "--", "env"] + [f"{k}={v}" for k, v in env.items()] + list(cmd)
+            kw = {}
+        else:
+            full, kw = list(cmd), {"env": {**os.environ, **env}}
+        try:
+            p = subprocess.run(full, capture_output=True, text=True, timeout=timeout, **kw)
+        except (OSError, subprocess.TimeoutExpired) as e:
+            return 1, str(e)
+        return p.returncode, (p.stdout.strip() or p.stderr.strip())
+
+    return run
+
+
+def wait_for_engine(run, seconds=10):
+    """Polls the freshly restarted daemon until it lists our engine."""
+    for _ in range(seconds):
+        time.sleep(1)
+        code, out = run("ibus", "list-engine", timeout=5)
+        if code == 0 and ENGINE in out:
+            return True
+    return False
+
+
+def parse_sources(text):
+    text = text.strip()
+    if not text.startswith("[") and "[" in text:  # "@a(ss) []"
+        text = text[text.index("["):]
+    try:
+        return [tuple(x) for x in ast.literal_eval(text)]
+    except (ValueError, SyntaxError):
+        return None
+
+
+def main():
+    args = [a for a in sys.argv[1:] if not a.startswith("--")]
+    try:
+        pw = pwd.getpwnam(args[0]) if args else pwd.getpwuid(os.getuid())
+    except KeyError:
+        say(f"không có user {args[0]!r}")
+        return 0
+    if pw.pw_uid == 0 and not DRY:
+        say("bỏ qua root (không có phiên đồ họa)")
+        return 0
+    if not os.path.exists(f"/run/user/{pw.pw_uid}/bus") and not DRY:
+        say(f"{pw.pw_name} chưa đăng nhập đồ họa; sau khi đăng nhập hãy thêm "
+            "'Vietnamese (Telex)' trong Settings → Keyboard → Input Sources")
+        return 0
+
+    run = runner(pw, session_env(pw))
+    # A stale registry cache is the usual reason a freshly installed engine does not show up.
+    run("ibus", "write-cache")
+    code, out = run("ibus", "restart")
+    if code != 0:
+        say(f"không restart được ibus ({out or 'không có thông báo'}); chạy tay: ibus restart")
+    elif DRY:
+        say("đã restart ibus")
+    elif wait_for_engine(run):
+        say("đã restart ibus, engine Gõ Tiếng Việt đã sẵn sàng")
+    else:
+        say("đã restart ibus nhưng chưa thấy engine gtv-telex; nếu bộ gõ không hiện, "
+            "đăng xuất rồi đăng nhập lại")
+
+    code, out = run("gsettings", "get", SCHEMA, "sources")
+    sources = parse_sources(out) if code == 0 else None
+    if DRY:
+        sources = [("xkb", "us")]
+    if sources is None:
+        say("không đọc được Input Sources (không phải GNOME?). Tự thêm 'Vietnamese (Telex)' "
+            "trong cài đặt bàn phím")
+        return 0
+    if not any(t == "ibus" and n in OURS for t, n in sources):
+        sources = sources or [("xkb", "us")]
+        sources.append(("ibus", ENGINE))
+        value = "[" + ", ".join(f"('{t}', '{n}')" for t, n in sources) + "]"
+        code, out = run("gsettings", "set", SCHEMA, "sources", value)
+        if code != 0:
+            say(f"không đặt được Input Sources: {out}")
+            return 0
+        say(f"đã thêm bộ gõ: {value}")
+    else:
+        say("bộ gõ đã có trong Input Sources")
+
+    index = next(i for i, (t, n) in enumerate(sources) if t == "ibus" and n in OURS)
+    code, _ = run("gsettings", "set", SCHEMA, "current", str(index))
+    say("đã chọn Gõ Tiếng Việt làm bộ gõ hiện tại" if code == 0 else "chưa chọn được bộ gõ hiện tại")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

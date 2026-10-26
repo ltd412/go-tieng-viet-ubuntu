@@ -34,6 +34,32 @@ impl AppDetector {
         None
     }
 
+    /// Process owning the focused toplevel (`_NET_WM_PID`).
+    pub fn focused_pid(&self) -> Option<u32> {
+        let atom = self.conn.intern_atom(false, b"_NET_WM_PID").ok()?.reply().ok()?.atom;
+        let mut win = self.conn.get_input_focus().ok()?.reply().ok()?.focus;
+        for _ in 0..32 {
+            if win <= 1 {
+                return None;
+            }
+            let reply = self
+                .conn
+                .get_property(false, win, atom, AtomEnum::CARDINAL, 0, 1)
+                .ok()?
+                .reply()
+                .ok()?;
+            if let Some(pid) = reply.value32().and_then(|mut v| v.next()) {
+                return Some(pid);
+            }
+            let tree = self.conn.query_tree(win).ok()?.reply().ok()?;
+            if tree.parent == tree.root || tree.parent == 0 {
+                return None;
+            }
+            win = tree.parent;
+        }
+        None
+    }
+
     /// Screen y of the top edge of the focused toplevel's client area.
     pub fn focused_top(&self) -> Option<i32> {
         let mut win = self.conn.get_input_focus().ok()?.reply().ok()?.focus;
@@ -73,4 +99,11 @@ impl AppDetector {
             .collect();
         Some(parts.join(" ").to_lowercase())
     }
+}
+
+/// Whether the process draws with GTK4 (and is not a VTE terminal, which never implements
+/// surrounding text). Decided from the libraries it has mapped.
+pub fn uses_gtk4(pid: u32) -> bool {
+    let Ok(maps) = std::fs::read_to_string(format!("/proc/{pid}/maps")) else { return false };
+    maps.contains("libgtk-4.so") && !maps.contains("libvte-")
 }

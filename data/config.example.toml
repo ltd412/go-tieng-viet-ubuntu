@@ -11,8 +11,8 @@ free_marking = true
 spell_check = true
 
 # Chờ bao nhiêu ms sau khi forward phím (BackSpace...) rồi mới commit chữ thay thế.
-# Tăng lên (20-30) nếu app chậm và thỉnh thoảng bị đảo chữ.
-pause_ms = 15
+# Tăng lên (40-60) nếu app chậm và thỉnh thoảng bị đảo chữ.
+pause_ms = 30
 
 # Chế độ preedit: có gạch chân hay không (Chrome/Electron luôn vẽ gạch chân dù đặt false)
 preedit_underline = false

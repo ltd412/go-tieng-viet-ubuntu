@@ -26,6 +26,7 @@ fi
 
 install -Dm755 "$BIN" "$OUT/lib/ibus-gtv/ibus-engine-gtv"
 install -Dm755 "$ROOT/data/ibus-setup-gtv" "$OUT/lib/ibus-gtv/ibus-setup-gtv"
+install -Dm755 "$ROOT/data/gtv-activate" "$OUT/lib/ibus-gtv/gtv-activate"
 install -Dm644 "$ROOT/data/gtv.svg" "$OUT/share/ibus-gtv/gtv.svg"
 install -Dm644 "$ROOT/data/config.example.toml" "$OUT/share/ibus-gtv/config.example.toml"
 mkdir -p "$OUT/share/ibus/component" "$OUT/share/applications"
@@ -45,16 +46,25 @@ for engine in gtv-telex gtv-vni; do
 done
 
 [ -n "$DESTDIR" ] && exit 0
-cat <<MSG
-Đã cài Gõ Tiếng Việt (GTV) vào $PREFIX.
+echo "Đã cài Gõ Tiếng Việt (GTV) vào $PREFIX."
 
-Bước tiếp theo (user thường):
-  ibus restart
-  gsettings set org.gnome.desktop.input-sources sources "[('xkb', 'us'), ('ibus', 'gtv-telex')]"
-  (hoặc Settings → Keyboard → Input Sources → Vietnamese (Telex))
+# Restart ibus và chọn bộ gõ cho user đang chạy sudo (đặt GTV_NO_ACTIVATE=1 để bỏ qua).
+if [ "${GTV_NO_ACTIVATE:-0}" != 1 ]; then
+  TARGET="${SUDO_USER:-}"
+  if [ -z "$TARGET" ] && [ "$(id -u)" != 0 ]; then TARGET="$(id -un)"; fi
+  if [ -n "$TARGET" ]; then
+    "$OUT/lib/ibus-gtv/gtv-activate" "$TARGET" || true
+  else
+    echo "Chạy bằng root thuần nên không biết user nào cần bật. Chạy: $PREFIX/lib/ibus-gtv/gtv-activate <user>"
+  fi
+fi
+
+cat <<MSG
 
 Cài đặt: mở "Gõ Tiếng Việt" trong menu ứng dụng (Activities → gõ "Gõ Tiếng Việt"),
   hoặc: $PREFIX/lib/ibus-gtv/ibus-setup-gtv
+Chuyển tiếng Anh/Việt: Super + Space.
+Nếu bộ gõ chưa hiện: đăng xuất rồi đăng nhập lại.
 
 Cấu hình tay (tùy chọn):
   mkdir -p ~/.config/gtv && cp $PREFIX/share/ibus-gtv/config.example.toml ~/.config/gtv/config.toml

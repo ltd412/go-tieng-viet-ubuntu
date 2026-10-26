@@ -37,9 +37,10 @@ Trang **Ứng dụng → Thêm các terminal phổ biến (tắt tiếng Việt)
 | `tone_style` | `"modern"` | `"modern"` = hòa, khỏe, thủy · `"old"` = hoà, khoẻ, thuỷ |
 | `free_marking` | `true` | Dấu mũ/móc đặt sau phụ âm cuối: `tieengs` → `tiếng` |
 | `spell_check` | `true` | Từ không phải âm tiết Việt giữ nguyên phím đã gõ |
-| `pause_ms` | `15` | Chờ bao nhiêu ms sau khi forward BackSpace rồi mới commit. Tăng lên 20–30 nếu app chậm và thỉnh thoảng đảo/mất chữ |
+| `pause_ms` | `30` | Chờ bao nhiêu ms sau khi forward BackSpace rồi mới commit. Tăng lên 40–60 nếu app chậm và thỉnh thoảng đảo/mất chữ |
 | `preedit_underline` | `false` | Gạch chân ở chế độ preedit (Chrome/Electron luôn vẽ gạch chân) |
 | `default_mode` | `"backspace"` | Chế độ cho app không nằm trong `[apps]` (xem bảng dưới) |
+| `address_bar_mode` | `"preedit"` | Chế độ khi con trỏ nằm trong thanh địa chỉ trình duyệt. Chrome tự gợi ý inline có thể ghi đè chữ giữa lúc xóa và commit, nên mặc định dùng preedit (có gạch chân). Đặt `"backspace"` nếu không muốn gạch chân |
 | `[apps]` | — | `"<chuỗi trong WM_CLASS>" = "<chế độ>"`. Xem WM_CLASS bằng `xprop WM_CLASS` rồi bấm vào cửa sổ |
 
 ## Cách gõ

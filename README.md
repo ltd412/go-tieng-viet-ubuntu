@@ -25,14 +25,16 @@ Gõ Tiếng Việt (GTV) là bộ gõ Telex và VNI cho **IBus**, viết bằng 
 
 ## Cài đặt
 
+Trình cài đặt tự **restart ibus** và **chọn Gõ Tiếng Việt (Telex)** làm bộ gõ cho tài khoản đang
+dùng, nên cài xong là gõ được ngay.
+
 ### Cách 1: file `.deb` (khuyên dùng)
 
 Tải `ibus-gtv_<phiên bản>_amd64.deb` ở trang
 [Releases](https://github.com/ltd412/go-tieng-viet-ubuntu/releases), rồi:
 
 ```bash
-sudo apt install ./ibus-gtv_0.1.0_amd64.deb
-ibus restart            # hoặc đăng xuất / đăng nhập lại
+sudo apt install ./ibus-gtv_*_amd64.deb
 ```
 
 Gỡ: `sudo apt remove ibus-gtv`.
@@ -52,9 +54,8 @@ git clone https://github.com/ltd412/go-tieng-viet-ubuntu.git
 cd go-tieng-viet-ubuntu
 cargo build --release
 
-# 4. Cài (ibus-daemon chỉ đọc component ở /usr/share/ibus/component nên cần root)
+# 4. Cài (cần root vì ibus-daemon chỉ đọc component ở /usr/share/ibus/component)
 sudo scripts/install.sh
-ibus restart            # hoặc đăng xuất / đăng nhập lại
 ```
 
 Tự đóng gói `.deb` từ mã nguồn: `sudo apt install fakeroot`, rồi `scripts/build-deb.sh`
@@ -62,20 +63,13 @@ Tự đóng gói `.deb` từ mã nguồn: `sudo apt install fakeroot`, rồi `sc
 
 Gỡ bản cài tay: `sudo scripts/uninstall.sh`.
 
-### Bật bộ gõ
+### Tự bật bộ gõ
 
-1. Mở **Settings → Keyboard → Input Sources → +** → *Vietnamese* → **Vietnamese (Telex)** (hoặc **VNI**).
-2. Đổi giữa tiếng Anh và tiếng Việt bằng phím tắt của GNOME (mặc định **Super + Space**).
+Nếu bạn không muốn trình cài đặt đổi cài đặt bàn phím, đặt `GTV_NO_ACTIVATE=1` trước lệnh cài. Khi đó
+bật thủ công ở **Settings → Keyboard → Input Sources → +** → *Vietnamese* → **Vietnamese (Telex)**
+(hoặc **VNI**), hoặc chạy lại phần tự động: `/usr/lib/ibus-gtv/gtv-activate`.
 
-Hoặc bằng dòng lệnh:
-
-```bash
-gsettings set org.gnome.desktop.input-sources sources "[('xkb', 'us'), ('ibus', 'gtv-telex')]"
-```
-
-> Nếu hàng trong Settings hiện `gtv-telex` thay vì `Vietnamese (Telex)`: đóng Settings và mở lại
-> sau khi `ibus restart` xong (Settings chỉ lấy danh sách engine một lần lúc mở), hoặc đăng xuất
-> rồi đăng nhập lại.
+Đổi giữa tiếng Anh và tiếng Việt bằng phím tắt của GNOME (mặc định **Super + Space**).
 
 ## Tài liệu
 

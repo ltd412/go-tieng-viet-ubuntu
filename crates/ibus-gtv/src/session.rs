@@ -91,6 +91,11 @@ impl Session {
         }
     }
 
+    /// No word is being composed, so the mode can change without losing text.
+    pub fn is_idle(&self) -> bool {
+        self.composer.is_empty()
+    }
+
     pub fn mode(&self) -> Mode {
         self.mode
     }

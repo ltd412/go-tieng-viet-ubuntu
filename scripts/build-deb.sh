@@ -42,9 +42,16 @@ CTL
 cat > "$STAGE/DEBIAN/postinst" <<'POST'
 #!/bin/sh
 set -e
-if [ "$1" = configure ]; then
-  echo "Gõ Tiếng Việt đã cài. Chạy 'ibus restart' (hoặc đăng xuất/đăng nhập), rồi thêm" >&2
-  echo "'Vietnamese (Telex)' trong Settings → Keyboard → Input Sources." >&2
+if [ "$1" = configure ] && [ "${GTV_NO_ACTIVATE:-0}" != 1 ]; then
+  # Restart ibus và chọn Gõ Tiếng Việt cho mọi user đang đăng nhập đồ họa.
+  for dir in /run/user/*; do
+    [ -S "$dir/bus" ] || continue
+    uid="$(basename "$dir")"
+    [ "$uid" -ge 1000 ] 2>/dev/null || continue
+    user="$(getent passwd "$uid" | cut -d: -f1)"
+    [ -n "$user" ] || continue
+    /usr/lib/ibus-gtv/gtv-activate "$user" || true
+  done
 fi
 exit 0
 POST

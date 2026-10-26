@@ -6,7 +6,7 @@
 
 | Triệu chứng | Cách xử lý |
 |---|---|
-| Thỉnh thoảng đảo hoặc mất chữ ở một app | Tăng `pause_ms` lên 20–30. Nếu vẫn lỗi, đặt app đó sang `preedit` |
+| Thỉnh thoảng đảo hoặc mất chữ ở một app | Tăng `pause_ms` lên 40–60. Nếu vẫn lỗi, đặt app đó sang `preedit` |
 | Gõ lệnh trong terminal bị đổi chữ (`off` → `of`) | Tắt tiếng Việt cho terminal (trang **Ứng dụng**) |
 | `www` thành `ww` ở thanh địa chỉ | Hành vi hoàn tác phím lặp như Unikey. Gõ `wwww`, hoặc dán URL |
 | Settings hiện `gtv-telex` thay vì tên | Đóng và mở lại Settings sau `ibus restart`, hoặc đăng xuất/đăng nhập |

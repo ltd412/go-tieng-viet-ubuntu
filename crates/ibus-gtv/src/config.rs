@@ -4,7 +4,7 @@
 //! tone_style = "modern"      # or "old"  (hòa/thủy vs hoà/thuỷ)
 //! free_marking = true
 //! spell_check = true
-//! pause_ms = 15              # wait after forwarded keys, before committing replacement text
+//! pause_ms = 30              # wait after forwarded keys, before committing replacement text
 //! preedit_underline = false  # underline the word while composing in `preedit` mode
 //!
 //! [apps]                     # WM_CLASS substring (case-insensitive) -> delivery mode
@@ -33,6 +33,10 @@ pub struct FileConfig {
     pause_ms: Option<u64>,
     /// Mode for apps that match nothing below.
     default_mode: Option<Mode>,
+    /// Mode while the caret is in a browser address bar. Chrome answers the engine's
+    /// BackSpace + commit with its inline autocomplete a moment later and can overwrite the
+    /// text, so the address bar defaults to `preedit`, which edits nothing behind its back.
+    address_bar_mode: Option<Mode>,
     apps: HashMap<String, Mode>,
 }
 
@@ -86,7 +90,11 @@ impl FileConfig {
     }
 
     pub fn pause_ms(&self) -> u64 {
-        self.pause_ms.unwrap_or(15)
+        self.pause_ms.unwrap_or(30)
+    }
+
+    pub fn address_bar_mode(&self) -> Mode {
+        self.address_bar_mode.unwrap_or(Mode::Preedit)
     }
 
     pub fn preedit_underline(&self) -> bool {
@@ -95,8 +103,12 @@ impl FileConfig {
 
     /// Delivery mode for the app identified by `wm_class` ("instance class", lowercase).
     /// User entries win over built-ins; the longest matching key wins within each list.
-    pub fn mode_for(&self, wm_class: Option<&str>) -> Mode {
-        let fallback = self.default_mode.unwrap_or(Mode::Backspace);
+    /// `gtk4` marks a GTK4 app: GTK4 ignores the BackSpace the engine forwards (the old text
+    /// stays and `ee` becomes `eê`) but implements DeleteSurroundingText, so apps that match no
+    /// entry and have no user-chosen default get `Surrounding`.
+    pub fn mode_for(&self, wm_class: Option<&str>, gtk4: bool) -> Mode {
+        let fallback =
+            self.default_mode.unwrap_or(if gtk4 { Mode::Surrounding } else { Mode::Backspace });
         let Some(class) = wm_class.map(str::to_lowercase) else { return fallback };
         let best = |entries: &mut dyn Iterator<Item = (&str, Mode)>| {
             entries
@@ -115,6 +127,24 @@ mod tests {
     use super::*;
 
     #[test]
+    fn gtk4_apps_default_to_surrounding_unless_configured() {
+        let cfg = FileConfig::default();
+        assert_eq!(cfg.mode_for(Some("nautilus org.gnome.nautilus"), true), Mode::Surrounding);
+        assert_eq!(cfg.mode_for(None, true), Mode::Surrounding);
+        assert_eq!(cfg.mode_for(Some("nautilus org.gnome.nautilus"), false), Mode::Backspace);
+        let cfg: FileConfig = toml::from_str(
+            r#"
+            default_mode = "preedit"
+            [apps]
+            "nautilus" = "off"
+            "#,
+        )
+        .unwrap();
+        assert_eq!(cfg.mode_for(Some("some-gtk4-app"), true), Mode::Preedit);
+        assert_eq!(cfg.mode_for(Some("nautilus org.gnome.nautilus"), true), Mode::Off);
+    }
+
+    #[test]
     fn terminals_can_be_switched_off() {
         let cfg: FileConfig = toml::from_str(
             r#"
@@ -123,8 +153,11 @@ mod tests {
             "#,
         )
         .unwrap();
-        assert_eq!(cfg.mode_for(Some("gnome-terminal-server gnome-terminal-server")), Mode::Off);
-        assert_eq!(cfg.mode_for(Some("code code")), Mode::Backspace);
+        assert_eq!(
+            cfg.mode_for(Some("gnome-terminal-server gnome-terminal-server"), false),
+            Mode::Off
+        );
+        assert_eq!(cfg.mode_for(Some("code code"), false), Mode::Backspace);
     }
 
     #[test]
@@ -138,24 +171,37 @@ mod tests {
             "#,
         )
         .unwrap();
-        assert_eq!(cfg.mode_for(Some("gnome-terminal-server Gnome-terminal")), Mode::Preedit);
-        assert_eq!(cfg.mode_for(Some("code-insiders Code - Insiders")), Mode::Select);
-        assert_eq!(cfg.mode_for(Some("code Code")), Mode::Backspace);
+        assert_eq!(
+            cfg.mode_for(Some("gnome-terminal-server Gnome-terminal"), false),
+            Mode::Preedit
+        );
+        assert_eq!(cfg.mode_for(Some("code-insiders Code - Insiders"), false), Mode::Select);
+        assert_eq!(cfg.mode_for(Some("code Code"), false), Mode::Backspace);
         assert_eq!(cfg.composer_config(Method::Telex).tone_style, ToneStyle::Old);
     }
 
     #[test]
     fn unknown_app_gets_the_universal_mode() {
         let cfg = FileConfig::default();
-        assert_eq!(cfg.mode_for(Some("gedit Gedit")), Mode::Surrounding);
-        assert_eq!(cfg.mode_for(Some("google-chrome google-chrome")), Mode::Backspace);
-        assert_eq!(cfg.mode_for(Some("gnome-terminal-server Gnome-terminal")), Mode::Backspace);
-        assert_eq!(cfg.mode_for(None), Mode::Backspace);
+        assert_eq!(cfg.mode_for(Some("gedit Gedit"), false), Mode::Surrounding);
+        assert_eq!(cfg.mode_for(Some("google-chrome google-chrome"), false), Mode::Backspace);
+        assert_eq!(
+            cfg.mode_for(Some("gnome-terminal-server Gnome-terminal"), false),
+            Mode::Backspace
+        );
+        assert_eq!(cfg.mode_for(None, false), Mode::Backspace);
+    }
+
+    #[test]
+    fn address_bar_defaults_to_preedit_and_is_configurable() {
+        assert_eq!(FileConfig::default().address_bar_mode(), Mode::Preedit);
+        let cfg: FileConfig = toml::from_str("address_bar_mode = \"backspace\"").unwrap();
+        assert_eq!(cfg.address_bar_mode(), Mode::Backspace);
     }
 
     #[test]
     fn default_mode_is_configurable() {
         let cfg: FileConfig = toml::from_str("default_mode = \"preedit\"").unwrap();
-        assert_eq!(cfg.mode_for(Some("anything")), Mode::Preedit);
+        assert_eq!(cfg.mode_for(Some("anything"), false), Mode::Preedit);
     }
 }

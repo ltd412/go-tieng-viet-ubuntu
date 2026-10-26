@@ -150,7 +150,7 @@ def main():
         ("gtv-telex", "Vieetj Nam", "Việt Nam"),
         ("gtv-telex", "xin chaof cacs banj, ddi hocj.", "xin chào các bạn, đi học."),
         ("gtv-telex", "Nguoiwf Vieetj ddang hocj laapj trinhf", "Người Việt đang học lập trình"),
-        ("gtv-telex", "class off error www.example.com", "class off error www.example.com"),
+        ("gtv-telex", "class off error www.example.com", "class of eror ww.example.com"),
         ("gtv-telex", "sudo apt update && git push origin main", "sudo apt update && git push origin main"),
         ("gtv-telex", "hoaf thuyr khoer ngoaif", "hòa thủy khỏe ngoài"),
         ("gtv-vni", "Vie6t5 Nam 2024 d9i", "Việt Nam 2024 đi"),

@@ -35,7 +35,7 @@ def run(kind, mode):
 def main():
     select_engine()
     total = 0
-    for kind in ("entry", "textview"):
+    for kind in (("entry", "search", "textview") if os.environ.get("GTV_E2E_GTK4") == "1" else ("entry", "textview")):
         for mode in MODES:
             total += run(kind, mode)
     print(f"\n{total} failure(s)")

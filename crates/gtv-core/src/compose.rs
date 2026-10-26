@@ -214,10 +214,11 @@ impl State<'_> {
             Action::Circ(target) => {
                 let Some(cl) = self.cluster() else { return false };
                 let hit = |l: &Letter| matches!(l.base, 'a' | 'e' | 'o');
-                // Telex reaches back only to the last vowel (`khoeo` must not become `khôe`);
-                // VNI digits are unambiguous, so any a/e/o in the cluster will do.
+                // Telex reaches back to the last vowel of the same kind, so `baya` -> `bây` like
+                // `baay`; a result that is no syllable (`khoeo` -> `khôe`) falls back to the
+                // typed keys. VNI digits are unambiguous, so any a/e/o in the cluster will do.
                 let pick = match target {
-                    Some(t) => Some(cl.end - 1).filter(|&p| self.letters[p].base == t),
+                    Some(t) => cl.rev().find(|&p| self.letters[p].base == t),
                     None => cl.rev().find(|&p| hit(&self.letters[p])),
                 };
                 match pick {

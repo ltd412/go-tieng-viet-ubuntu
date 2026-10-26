@@ -382,3 +382,13 @@ fn backspace_after_undone_mark_does_not_apply_it_again() {
     assert_eq!(after("conffil", 2), "conf");
     assert_eq!(after("offf", 1), "of");
 }
+
+#[test]
+fn circumflex_reaches_the_matching_vowel_behind_a_glide() {
+    assert_eq!(live("baay"), "bây");
+    assert_eq!(live("baya"), "bây");
+    assert_eq!(live("caua"), "câu");
+    // Not a syllable with the mark, so the typed keys stay.
+    assert_eq!(live("khoeo"), "khoeo");
+    assert_eq!(live("hoaa"), "hoaa");
+}

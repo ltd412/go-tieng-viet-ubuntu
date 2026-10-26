@@ -21,6 +21,8 @@ CASES = [
     ("dduwocj loox looxi", "được lỗ lỗi"),
     ("confil config confirm conf file", "confil config confirm còn file"),
     ("conff eee\b m", "conf e m"),
+    ("neeus nguoiwf quanr lys", "nếu người quản lý"),
+    ("baya cauas", "bây cấu"),
     ("eee\b ", "e "),
     ("eeee\b ", "ee "),
     ("eeee\b m", "ee m"),
@@ -50,6 +52,8 @@ def app_env():
     env.update(DISPLAY=DISPLAY, GTK_IM_MODULE="ibus", QT_IM_MODULE="ibus", XMODIFIERS="@im=ibus",
                IBUS_ADDRESS=os.environ["IBUS_ADDRESS"])
     env.pop("WAYLAND_DISPLAY", None)
+    env.setdefault("GSK_RENDERER", "cairo")  # no GL in the nested X server
+    env.setdefault("GDK_BACKEND", "x11")
     # The desktop session exports IBUS_USE_PORTAL=1, which would route the toolkit to the real
     # ibus-portal (and the real input method) instead of the sandbox daemon.
     env.pop("IBUS_USE_PORTAL", None)

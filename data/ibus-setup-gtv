@@ -35,7 +35,7 @@ DEFAULTS = {
     "tone_style": "modern",
     "free_marking": True,
     "spell_check": True,
-    "pause_ms": 15,
+    "pause_ms": 30,
     "preedit_underline": False,
     "default_mode": "backspace",
     "apps": {},
@@ -148,7 +148,7 @@ def main():
 
             self.pause = Adw.SpinRow.new_with_range(0, 100, 1)
             self.pause.set_title("Độ trễ sau BackSpace (ms)")
-            self.pause.set_subtitle("Tăng lên 20–30 nếu app chậm và thỉnh thoảng bị đảo hoặc mất chữ.")
+            self.pause.set_subtitle("Tăng lên 40–60 nếu app chậm và thỉnh thoảng bị đảo hoặc mất chữ.")
             self.pause.set_value(float(self.cfg["pause_ms"]))
             self.pause.connect("notify::value", lambda r, _p: self.set("pause_ms", int(r.get_value())))
             delivery.add(self.pause)

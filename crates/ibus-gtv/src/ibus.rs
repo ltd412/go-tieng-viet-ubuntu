@@ -13,7 +13,7 @@ use zbus::object_server::SignalEmitter;
 use zbus::zvariant::{OwnedObjectPath, Structure, StructureBuilder, Value};
 use zbus::{interface, Connection, ObjectServer};
 
-use crate::appdetect::AppDetector;
+use crate::appdetect::{uses_gtk4, AppDetector};
 use crate::config::FileConfig;
 use crate::session::{is_modifier, KeyEvent, Mode, Out, Session, RELEASE_MASK};
 
@@ -105,7 +105,10 @@ impl Factory {
             path: path.clone(),
             underline: false,
             browser: false,
-            pause: Duration::from_millis(15),
+            base_mode: Mode::Backspace,
+            address_mode: Mode::Preedit,
+            in_toolbar: false,
+            pause: Duration::from_millis(30),
             queue,
             clocks,
         };
@@ -164,6 +167,10 @@ struct Engine {
     underline: bool,
     /// The focused app is a browser (see `is_browser`).
     browser: bool,
+    /// Mode chosen at focus-in for the focused app, and the one used in a browser address bar.
+    base_mode: Mode,
+    address_mode: Mode,
+    in_toolbar: bool,
     pause: Duration,
     /// The only road to the client: one thread emits every signal, in order, so two senders can
     /// never race on the connection and a delayed batch can never be overtaken.
@@ -303,15 +310,25 @@ impl Engine {
         }
         let class = self.shared.detector.as_ref().and_then(AppDetector::focused_class);
         let has_surrounding = self.caps & CAP_SURROUNDING_TEXT != 0;
-        let (mode, underline, pause_ms) = self
-            .shared
-            .with_config(|c| (c.mode_for(class.as_deref()), c.preedit_underline(), c.pause_ms()));
+        let gtk4 =
+            self.shared.detector.as_ref().and_then(AppDetector::focused_pid).is_some_and(uses_gtk4);
+        let (mode, underline, pause_ms, address_mode) = self.shared.with_config(|c| {
+            (
+                c.mode_for(class.as_deref(), gtk4),
+                c.preedit_underline(),
+                c.pause_ms(),
+                c.address_bar_mode(),
+            )
+        });
+        self.address_mode = address_mode;
+        self.in_toolbar = false;
         self.underline = underline;
         self.browser = class.as_deref().is_some_and(is_browser);
         self.session.set_clear_suggestion(false);
         self.pause = Duration::from_millis(pause_ms);
         let mode =
             if mode == Mode::Surrounding && !has_surrounding { Mode::Backspace } else { mode };
+        self.base_mode = mode;
         log::debug!("focus in {:?}: {:?} ({})", class, mode, self.path);
         let mut outs = self.session.set_mode(mode);
         if mode == Mode::Surrounding {
@@ -389,6 +406,17 @@ impl Engine {
         let top = self.shared.detector.as_ref().and_then(AppDetector::focused_top);
         let in_toolbar = top.is_some_and(|t| (0..BROWSER_TOOLBAR_PX).contains(&(y - t)));
         self.session.set_clear_suggestion(in_toolbar);
+        // The caret moved between the address bar and the page: switch modes, but only between
+        // words so no typed text is stranded.
+        if in_toolbar != self.in_toolbar && self.session.is_idle() {
+            self.in_toolbar = in_toolbar;
+            let want = if in_toolbar { self.address_mode } else { self.base_mode };
+            if want != self.session.mode() {
+                log::debug!("address bar {in_toolbar}: mode {want:?}");
+                let outs = self.session.set_mode(want);
+                self.deliver(outs);
+            }
+        }
     }
 
     fn set_surrounding_text(&self, text: Value<'_>, cursor_pos: u32, anchor_pos: u32) {
