@@ -73,6 +73,7 @@ bật thủ công ở **Settings → Keyboard → Input Sources → +** → *Vie
 
 ## Tài liệu
 
+- [Trang web giới thiệu](https://ltd412.github.io/go-tieng-viet-ubuntu/)
 - [Cách dùng và cấu hình](docs/su-dung.md): cửa sổ cài đặt, file cấu hình, bảng gõ Telex và VNI.
 - [Chế độ gửi chữ](docs/che-do-gui-chu.md): cách GTV đưa chữ vào từng loại ứng dụng.
 - [Xử lý sự cố và giới hạn](docs/xu-ly-su-co.md)
