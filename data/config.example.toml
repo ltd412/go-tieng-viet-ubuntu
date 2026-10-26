@@ -1,0 +1,30 @@
+# ~/.config/gtv/config.toml
+# Mọi khóa đều tùy chọn. Engine tự nạp lại khi file đổi (có hiệu lực ở lần focus kế tiếp).
+
+# Vị trí dấu của oa/oe/uy: "modern" = hòa, khỏe, thủy | "old" = hoà, khoẻ, thuỷ
+tone_style = "modern"
+
+# Cho phép phím mũ/dấu áp ngược qua phụ âm cuối: "viete" -> "viêt", "tieengs" -> "tiếng"
+free_marking = true
+
+# Từ không phải âm tiết tiếng Việt hợp lệ (text, class, off, www...) được trả về đúng phím đã gõ
+spell_check = true
+
+# Chờ bao nhiêu ms sau khi forward phím (BackSpace...) rồi mới commit chữ thay thế.
+# Tăng lên (20-30) nếu app chậm và thỉnh thoảng bị đảo chữ.
+pause_ms = 15
+
+# Chế độ preedit: có gạch chân hay không (Chrome/Electron luôn vẽ gạch chân dù đặt false)
+preedit_underline = false
+
+# Mode cho app không khớp mục nào trong [apps]:
+#   backspace | surrounding | select | forward-keys | preedit | off
+# "off" = tắt tiếng Việt, mọi phím đi thẳng vào app (dùng cho terminal chỉ gõ tiếng Anh)
+# default_mode = "backspace"
+
+[apps]
+# Khóa là chuỗi con của WM_CLASS (không phân biệt hoa thường), giá trị là mode.
+# Xem WM_CLASS của cửa sổ bằng:  xprop WM_CLASS   rồi bấm vào cửa sổ.
+# "gnome-text-editor" = "surrounding"
+# "some-legacy-app" = "preedit"
+# "gnome-terminal" = "off"

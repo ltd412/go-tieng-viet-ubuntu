@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<component>
+  <name>org.freedesktop.IBus.GTV</name>
+  <description>Gõ Tiếng Việt</description>
+  <exec>@EXEC@ --ibus</exec>
+  <version>@VERSION@</version>
+  <author>GTV</author>
+  <license>MIT</license>
+  <homepage>https://github.com/</homepage>
+  <textdomain>ibus-gtv</textdomain>
+  <engines>
+    <engine>
+      <name>gtv-telex</name>
+      <language>vi</language>
+      <license>MIT</license>
+      <author>GTV</author>
+      <icon>@ICON@</icon>
+      <layout>default</layout>
+      <longname>Telex</longname>
+      <description>Gõ Tiếng Việt, kiểu Telex</description>
+      <symbol>Vi</symbol>
+      <setup>@SETUP@</setup>
+      <rank>5</rank>
+    </engine>
+    <engine>
+      <name>gtv-vni</name>
+      <language>vi</language>
+      <license>MIT</license>
+      <author>GTV</author>
+      <icon>@ICON@</icon>
+      <layout>default</layout>
+      <longname>VNI</longname>
+      <description>Gõ Tiếng Việt, kiểu VNI</description>
+      <symbol>Vi</symbol>
+      <setup>@SETUP@</setup>
+      <rank>4</rank>
+    </engine>
+  </engines>
+</component>

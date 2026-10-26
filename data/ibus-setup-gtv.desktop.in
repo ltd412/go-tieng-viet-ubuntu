@@ -1,0 +1,12 @@
+[Desktop Entry]
+Name=Gõ Tiếng Việt
+Name[vi]=Gõ Tiếng Việt
+Comment=Configure the Gõ Tiếng Việt input method
+Comment[vi]=Kiểu dấu, chế độ gõ và danh sách app dùng bộ gõ tiếng Việt
+Exec=@SETUP@
+Icon=@ICON@
+Terminal=false
+Type=Application
+StartupNotify=true
+Categories=Settings;
+Keywords=GTV;Gõ Tiếng Việt;Vietnamese;ibus;telex;tiếng Việt;bộ gõ;

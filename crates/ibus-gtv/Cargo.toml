@@ -1,0 +1,20 @@
+[package]
+name = "ibus-gtv"
+description = "IBus frontend for the GTV Vietnamese input method"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[[bin]]
+name = "ibus-engine-gtv"
+path = "src/main.rs"
+
+[dependencies]
+gtv-core = { path = "../gtv-core" }
+zbus = { version = "5", default-features = false, features = ["async-io"] }
+async-io = "2"
+x11rb = "0.13"
+serde = { version = "1", features = ["derive"] }
+toml = "0.8"
+log = "0.4"
+env_logger = { version = "0.11", default-features = false, features = ["humantime"] }

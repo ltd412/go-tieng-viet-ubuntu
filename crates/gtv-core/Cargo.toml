@@ -1,0 +1,8 @@
+[package]
+name = "gtv-core"
+description = "Vietnamese input method core: Telex/VNI composition, tone placement, syllable validation"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]

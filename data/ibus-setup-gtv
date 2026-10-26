@@ -1,0 +1,303 @@
+#!/usr/bin/python3
+"""Preferences for GTV: edits ~/.config/gtv/config.toml. The engine reloads the file by itself,
+so every change is saved at once and takes effect the next time a text field gets focus."""
+import os
+import subprocess
+import sys
+import threading
+import tomllib
+
+PATH = os.path.join(os.environ.get("XDG_CONFIG_HOME", os.path.expanduser("~/.config")), "gtv", "config.toml")
+
+MODES = ["backspace", "off", "preedit", "surrounding", "select", "forward-keys"]
+SHORT = {
+    "backspace": "Tiếng Việt",
+    "off": "Tắt – chỉ gõ tiếng Anh",
+    "preedit": "Tiếng Việt, có gạch chân",
+    "surrounding": "Tiếng Việt (surrounding)",
+    "select": "Tiếng Việt (select, thử nghiệm)",
+    "forward-keys": "Tiếng Việt (forward-keys, thử nghiệm)",
+}
+MODE_HELP = {
+    "backspace": "Mặc định. Đúng ở GTK, terminal, Chrome, VS Code.",
+    "off": "Mọi phím đi thẳng vào app, không biến đổi gì.",
+    "preedit": "Chữ đang gõ có gạch chân. Dùng khi một app bị lỗi với chế độ mặc định.",
+    "surrounding": "Chỉ các app GTK/Qt hỗ trợ tốt.",
+    "select": "Thử nghiệm.",
+    "forward-keys": "Thử nghiệm.",
+}
+TONE_STYLES = ["modern", "old"]
+TONE_LABELS = ["Kiểu mới: hòa, khỏe, thủy", "Kiểu cũ: hoà, khoẻ, thuỷ"]
+TERMINALS = ["gnome-terminal", "kitty", "alacritty", "xterm", "konsole", "tilix", "terminator",
+             "warp", "wezterm", "xfce4-terminal"]
+
+DEFAULTS = {
+    "tone_style": "modern",
+    "free_marking": True,
+    "spell_check": True,
+    "pause_ms": 15,
+    "preedit_underline": False,
+    "default_mode": "backspace",
+    "apps": {},
+}
+
+
+def load():
+    cfg = {**DEFAULTS, "apps": {}}
+    try:
+        with open(PATH, "rb") as f:
+            raw = tomllib.load(f)
+    except (OSError, tomllib.TOMLDecodeError):
+        return cfg
+    for k in DEFAULTS:
+        if k in raw:
+            cfg[k] = raw[k]
+    cfg["apps"] = {str(k): str(v) for k, v in raw.get("apps", {}).items()}
+    return cfg
+
+
+def q(s):
+    return '"' + s.replace("\\", "\\\\").replace('"', '\\"') + '"'
+
+
+def save(cfg):
+    lines = [
+        "# Tạo bởi ibus-setup-gtv. Engine tự nạp lại khi file đổi.",
+        f"tone_style = {q(cfg['tone_style'])}",
+        f"free_marking = {str(cfg['free_marking']).lower()}",
+        f"spell_check = {str(cfg['spell_check']).lower()}",
+        f"pause_ms = {int(cfg['pause_ms'])}",
+        f"preedit_underline = {str(cfg['preedit_underline']).lower()}",
+        f"default_mode = {q(cfg['default_mode'])}",
+        "",
+        "[apps]",
+    ]
+    lines += [f"{q(k)} = {q(v)}" for k, v in cfg["apps"].items() if k]
+    os.makedirs(os.path.dirname(PATH), exist_ok=True)
+    tmp = PATH + ".tmp"
+    with open(tmp, "w") as f:
+        f.write("\n".join(lines) + "\n")
+    os.replace(tmp, PATH)
+
+
+def wm_class_of_clicked_window():
+    """Runs xprop and returns the class part of WM_CLASS of the window the user clicks."""
+    out = subprocess.run(["xprop", "WM_CLASS"], capture_output=True, text=True, timeout=15).stdout
+    parts = [p.strip().strip('"').lower() for p in out.partition("=")[2].split(",") if p.strip()]
+    return parts[-1] if parts else None
+
+
+def main():
+    import gi
+
+    gi.require_version("Gtk", "4.0")
+    gi.require_version("Adw", "1")
+    from gi.repository import Adw, GLib, Gtk
+
+    class Prefs(Adw.PreferencesWindow):
+        def __init__(self, app):
+            super().__init__(application=app, title="Gõ Tiếng Việt")
+            self.set_default_size(680, 720)
+            self.cfg = load()
+            self.app_rows = []
+            self.save_id = 0
+
+            general = Adw.PreferencesPage(title="Chung", icon_name="preferences-system-symbolic")
+            self.add(general)
+
+            typing = Adw.PreferencesGroup(
+                title="Kiểu gõ",
+                description="Telex hay VNI chọn ở Settings → Keyboard → Input Sources "
+                            "(thêm Vietnamese Telex hoặc Vietnamese VNI).")
+            general.add(typing)
+
+            self.tone = Adw.ComboRow(title="Vị trí dấu", model=Gtk.StringList.new(TONE_LABELS))
+            self.tone.set_selected(TONE_STYLES.index(self.cfg["tone_style"])
+                                   if self.cfg["tone_style"] in TONE_STYLES else 0)
+            self.tone.connect("notify::selected", lambda r, _p: self.set(
+                "tone_style", TONE_STYLES[r.get_selected()]))
+            typing.add(self.tone)
+
+            self.free = Adw.SwitchRow(
+                title="Gõ dấu tự do",
+                subtitle="Cho phép dấu mũ, móc đặt sau phụ âm cuối: tieengs → tiếng, viete → viêt.",
+                active=bool(self.cfg["free_marking"]))
+            self.free.connect("notify::active", lambda r, _p: self.set("free_marking", r.get_active()))
+            typing.add(self.free)
+
+            self.spell = Adw.SwitchRow(
+                title="Kiểm tra chính tả",
+                subtitle="Từ không phải âm tiết tiếng Việt (class, windows…) giữ nguyên phím đã gõ.",
+                active=bool(self.cfg["spell_check"]))
+            self.spell.connect("notify::active", lambda r, _p: self.set("spell_check", r.get_active()))
+            typing.add(self.spell)
+
+            delivery = Adw.PreferencesGroup(
+                title="Cách gửi chữ vào ứng dụng",
+                description="Chỉ đổi khi có app bị lỗi mất chữ hoặc đảo chữ.")
+            general.add(delivery)
+
+            self.mode = Adw.ComboRow(
+                title="Mặc định cho mọi app",
+                model=Gtk.StringList.new([SHORT[m] for m in MODES]))
+            self.mode.set_selected(MODES.index(self.cfg["default_mode"])
+                                   if self.cfg["default_mode"] in MODES else 0)
+            self.mode.connect("notify::selected", self.on_default_mode)
+            self.on_default_mode(self.mode, None, save_now=False)
+            delivery.add(self.mode)
+
+            self.pause = Adw.SpinRow.new_with_range(0, 100, 1)
+            self.pause.set_title("Độ trễ sau BackSpace (ms)")
+            self.pause.set_subtitle("Tăng lên 20–30 nếu app chậm và thỉnh thoảng bị đảo hoặc mất chữ.")
+            self.pause.set_value(float(self.cfg["pause_ms"]))
+            self.pause.connect("notify::value", lambda r, _p: self.set("pause_ms", int(r.get_value())))
+            delivery.add(self.pause)
+
+            self.underline = Adw.SwitchRow(
+                title="Gạch chân ở chế độ preedit",
+                subtitle="Chrome và app Electron luôn gạch chân, bất kể cài đặt này.",
+                active=bool(self.cfg["preedit_underline"]))
+            self.underline.connect("notify::active", lambda r, _p: self.set(
+                "preedit_underline", r.get_active()))
+            delivery.add(self.underline)
+
+            apps_page = Adw.PreferencesPage(title="Ứng dụng", icon_name="view-list-symbolic")
+            self.add(apps_page)
+            self.apps_group = Adw.PreferencesGroup(
+                title="Cài đặt riêng cho từng ứng dụng",
+                description="Ví dụ tắt tiếng Việt trong terminal để gõ lệnh không bị đổi chữ.")
+            apps_page.add(self.apps_group)
+
+            actions = Adw.PreferencesGroup()
+            apps_page.add(actions)
+            for label, cb in [("Chọn ứng dụng bằng cách bấm vào cửa sổ của nó", self.pick),
+                              ("Thêm các terminal phổ biến (tắt tiếng Việt)", self.add_terminals),
+                              ("Thêm ứng dụng theo tên…", self.add_by_name)]:
+                row = Adw.ActionRow(title=label, activatable=True)
+                row.add_suffix(Gtk.Image.new_from_icon_name("go-next-symbolic"))
+                row.connect("activated", cb)
+                actions.add(row)
+            self.refresh_apps()
+
+        # ---- state ----
+        def set(self, key, value):
+            self.cfg[key] = value
+            self.queue_save()
+
+        def queue_save(self):
+            if self.save_id:
+                GLib.source_remove(self.save_id)
+            self.save_id = GLib.timeout_add(300, self.flush)
+
+        def flush(self):
+            self.save_id = 0
+            try:
+                save(self.cfg)
+                self.add_toast(Adw.Toast(title="Đã lưu", timeout=1))
+            except OSError as e:
+                self.add_toast(Adw.Toast(title=f"Không lưu được: {e}"))
+            return False
+
+        def on_default_mode(self, row, _p, save_now=True):
+            mode = MODES[row.get_selected()]
+            row.set_subtitle(MODE_HELP[mode])
+            if save_now:
+                self.set("default_mode", mode)
+
+        # ---- per-app list ----
+        def refresh_apps(self):
+            for r in self.app_rows:
+                self.apps_group.remove(r)
+            self.app_rows = []
+            if not self.cfg["apps"]:
+                empty = Adw.ActionRow(
+                    title="Chưa có ứng dụng nào",
+                    subtitle="Mọi ứng dụng dùng cách gửi chữ mặc định ở trang Chung.")
+                empty.set_sensitive(False)
+                self.apps_group.add(empty)
+                self.app_rows.append(empty)
+                return
+            for name, mode in sorted(self.cfg["apps"].items()):
+                row = Adw.ComboRow(title=name, model=Gtk.StringList.new([SHORT[m] for m in MODES]))
+                row.set_selected(MODES.index(mode) if mode in MODES else 0)
+                row.connect("notify::selected", self.on_app_mode, name)
+                remove = Gtk.Button(icon_name="user-trash-symbolic", valign=Gtk.Align.CENTER,
+                                    tooltip_text="Xóa khỏi danh sách")
+                remove.add_css_class("flat")
+                remove.connect("clicked", self.on_remove, name)
+                row.add_suffix(remove)
+                self.apps_group.add(row)
+                self.app_rows.append(row)
+
+        def on_app_mode(self, row, _p, name):
+            self.cfg["apps"][name] = MODES[row.get_selected()]
+            self.queue_save()
+
+        def on_remove(self, _b, name):
+            self.cfg["apps"].pop(name, None)
+            self.queue_save()
+            self.refresh_apps()
+
+        def upsert(self, name, mode="off"):
+            name = name.strip().lower()
+            if name:
+                self.cfg["apps"][name] = mode
+                self.queue_save()
+                self.refresh_apps()
+
+        def add_terminals(self, *_):
+            for t in TERMINALS:
+                self.upsert(t)
+            self.add_toast(Adw.Toast(title="Đã thêm các terminal, tiếng Việt tắt"))
+
+        def pick(self, *_):
+            self.add_toast(Adw.Toast(title="Bấm vào cửa sổ của ứng dụng cần thêm…", timeout=4))
+
+            def work():
+                try:
+                    name = wm_class_of_clicked_window()
+                except (OSError, subprocess.TimeoutExpired):
+                    name = None
+                GLib.idle_add(self.picked, name)
+
+            threading.Thread(target=work, daemon=True).start()
+
+        def picked(self, name):
+            if name:
+                self.upsert(name)
+                self.add_toast(Adw.Toast(title=f"Đã thêm “{name}”, tiếng Việt tắt"))
+            else:
+                self.add_toast(Adw.Toast(title="Không lấy được tên cửa sổ (cần X11 và xprop)"))
+            return False
+
+        def add_by_name(self, *_):
+            entry = Gtk.Entry(placeholder_text="ví dụ: gnome-terminal", activates_default=True)
+            dialog = Adw.MessageDialog(
+                transient_for=self, heading="Thêm ứng dụng",
+                body="Nhập một phần của WM_CLASS (xem bằng `xprop WM_CLASS`).")
+            dialog.set_extra_child(entry)
+            dialog.add_response("cancel", "Hủy")
+            dialog.add_response("add", "Thêm")
+            dialog.set_response_appearance("add", Adw.ResponseAppearance.SUGGESTED)
+            dialog.set_default_response("add")
+            dialog.connect("response", lambda _d, r: r == "add" and self.upsert(entry.get_text()))
+            dialog.present()
+
+    class App(Adw.Application):
+        def __init__(self):
+            super().__init__(application_id="org.freedesktop.IBus.GTV.Setup")
+            self.connect("activate", lambda a: Prefs(a).present())
+
+    return App().run([sys.argv[0]])
+
+
+if __name__ == "__main__":
+    if "--selftest" in sys.argv:
+        save({**DEFAULTS, "tone_style": "old", "pause_ms": 20, "apps": {"foo": "off"}})
+        print(load())
+        sys.exit(0)
+    try:
+        sys.exit(main())
+    except (ImportError, ValueError) as e:
+        sys.exit(f"ibus-setup-gtv cần gói gir1.2-adw-1 và gir1.2-gtk-4.0 ({e}).\n"
+                 f"Có thể sửa tay file {PATH}.")
