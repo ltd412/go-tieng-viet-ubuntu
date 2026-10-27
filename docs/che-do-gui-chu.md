@@ -39,4 +39,7 @@ Cùng một ý tưởng ("BackSpace rồi commit") nhưng bốn chỗ khác bi�
 **Thanh địa chỉ trình duyệt** có inline autocomplete: phần gợi ý sau con trỏ đang được chọn nên
 BackSpace đầu tiên xóa gợi ý chứ không xóa chữ vừa gõ. Khi con trỏ nằm trong 80 px trên cùng của
 cửa sổ trình duyệt (Chrome, Chromium, Brave, Vivaldi, Edge, Opera, Firefox), GTV forward thêm
-`Delete` trước BackSpace để bỏ phần gợi ý.
+`Delete` trước BackSpace để bỏ phần gợi ý, và dùng pause tối thiểu 60 ms vì Chrome cập nhật gợi ý
+chậm hơn lúc gõ. Phím **Tab** ở đây cũng do GTV forward lại: Tab đi qua bộ gõ không còn nhận gợi ý
+inline của Chrome, còn Tab do GTV forward thì nhận được. Chế độ này là `address_bar_mode` (mặc định
+`backspace`); `preedit` không rớt chữ nhưng Chrome luôn gạch chân chữ đang gõ.

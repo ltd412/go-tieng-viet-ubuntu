@@ -37,7 +37,8 @@ OMNIBOX_CASES = [
 
 
 # GTV_E2E_TAB=1: type the first letters of HOST, press Tab to accept the inline suggestion.
-TAB_CASES = [("vi", "viet.localhost:8123/"), ("viet", "viet.localhost:8123/")]
+TAB_CASES = [("vi", "http://viet.localhost:8123/"), ("viet", "http://viet.localhost:8123/"),
+             ("vie", "http://viet.localhost:8123/")]
 
 
 class Quiet(http.server.SimpleHTTPRequestHandler):

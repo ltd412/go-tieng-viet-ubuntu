@@ -308,6 +308,28 @@ fn address_bar_suggestion_does_not_eat_the_typed_letter() {
 }
 
 #[test]
+fn address_bar_tab_is_forwarded_by_the_engine() {
+    let tab = |clear: bool| {
+        let mut session = Session::new(Config::default(), Mode::Backspace);
+        session.set_clear_suggestion(clear);
+        for c in "vie".chars() {
+            session.process_key(KeyEvent { keyval: c as u32, keycode: 0, state: 0 });
+        }
+        session.process_key(KeyEvent { keyval: KEY_TAB, keycode: 0, state: 0 })
+    };
+    let forwards_tab = |outs: &[Out]| {
+        outs.iter()
+            .any(|o| matches!(o, Out::Key(k) if k.keyval == KEY_TAB && k.state & RELEASE_MASK == 0))
+    };
+    // Address bar: consumed and re-sent as a forwarded key (so Chrome accepts the suggestion).
+    let (handled, outs) = tab(true);
+    assert!(handled && forwards_tab(&outs));
+    // Anywhere else Tab goes through untouched.
+    let (handled, outs) = tab(false);
+    assert!(!handled && !forwards_tab(&outs));
+}
+
+#[test]
 fn off_mode_passes_every_key_through() {
     let mut rig = Rig::new(Mode::Off, Config::default());
     rig.type_str("vieetj ddi");

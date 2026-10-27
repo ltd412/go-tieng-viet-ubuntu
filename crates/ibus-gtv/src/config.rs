@@ -35,9 +35,9 @@ pub struct FileConfig {
     default_mode: Option<Mode>,
     /// Mode while the caret is in a browser address bar. Chrome answers the engine's
     /// BackSpace + commit with its inline autocomplete a moment later and can overwrite the
-    /// text, so the address bar defaults to `preedit`, which edits nothing behind its back. Measured
-    /// through ibus-portal: `backspace` still lost characters in most omnibox runs even with the
-    /// longer address-bar pause, `preedit` did not.
+    /// text. `backspace` (default) keeps typing free of the underline Chrome always draws under a
+    /// preedit, with a longer pause (`ADDRESS_BAR_MIN_PAUSE_MS`) and a Delete that drops the inline
+    /// suggestion. `preedit` never loses a character but is underlined.
     address_bar_mode: Option<Mode>,
     apps: HashMap<String, Mode>,
 }
@@ -96,7 +96,7 @@ impl FileConfig {
     }
 
     pub fn address_bar_mode(&self) -> Mode {
-        self.address_bar_mode.unwrap_or(Mode::Preedit)
+        self.address_bar_mode.unwrap_or(Mode::Backspace)
     }
 
     pub fn preedit_underline(&self) -> bool {
@@ -195,10 +195,10 @@ mod tests {
     }
 
     #[test]
-    fn address_bar_defaults_to_preedit_and_is_configurable() {
-        assert_eq!(FileConfig::default().address_bar_mode(), Mode::Preedit);
-        let cfg: FileConfig = toml::from_str("address_bar_mode = \"backspace\"").unwrap();
-        assert_eq!(cfg.address_bar_mode(), Mode::Backspace);
+    fn address_bar_defaults_to_backspace_and_is_configurable() {
+        assert_eq!(FileConfig::default().address_bar_mode(), Mode::Backspace);
+        let cfg: FileConfig = toml::from_str("address_bar_mode = \"preedit\"").unwrap();
+        assert_eq!(cfg.address_bar_mode(), Mode::Preedit);
     }
 
     #[test]

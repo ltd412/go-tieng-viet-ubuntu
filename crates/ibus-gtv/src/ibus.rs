@@ -110,7 +110,7 @@ impl Factory {
             underline: false,
             browser: false,
             base_mode: Mode::Backspace,
-            address_mode: Mode::Preedit,
+            address_mode: Mode::Backspace,
             base_pause: Duration::from_millis(30),
             in_toolbar: false,
             pause: Duration::from_millis(30),

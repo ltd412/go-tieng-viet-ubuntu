@@ -27,6 +27,7 @@ const KEY_KP_ENTER: u32 = 0xff8d;
 const KEYCODE_BACKSPACE: u32 = 14;
 const KEYCODE_LEFT: u32 = 105;
 const KEYCODE_DELETE: u32 = 111;
+const KEYCODE_TAB: u32 = 15;
 
 /// How a rewrite of the word already on screen reaches the application.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Deserialize)]
@@ -149,6 +150,13 @@ impl Session {
         }
         match ev.keyval {
             KEY_BACKSPACE => return self.backspace(out),
+            KEY_TAB if self.clear_suggestion => {
+                // Address bar: a Tab that went through the input method no longer accepts Chrome's
+                // inline suggestion; the same key forwarded by the engine does.
+                self.end_word(out, true);
+                push_key(out, KEY_TAB, KEYCODE_TAB, 0);
+                return true;
+            }
             KEY_RETURN | KEY_KP_ENTER | KEY_TAB | KEY_ESCAPE => {
                 self.end_word(out, true);
                 return false;

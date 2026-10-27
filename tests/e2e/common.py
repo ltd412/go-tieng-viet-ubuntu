@@ -62,6 +62,10 @@ def app_env():
         # Same wiring as a session with IBUS_USE_PORTAL=1: apps talk to a private ibus-portal.
         env["IBUS_USE_PORTAL"] = "1"
         env["DBUS_SESSION_BUS_ADDRESS"] = open(os.path.join(SANDBOX, "run", "portal-bus")).read().strip()
+    if os.environ.get("GTV_E2E_NOIM"):  # baseline: the toolkit's own input, no IBus at all
+        for k in ("GTK_IM_MODULE", "QT_IM_MODULE", "XMODIFIERS", "IBUS_USE_PORTAL"):
+            env.pop(k, None)
+        env["GTK_IM_MODULE"] = "gtk-im-context-simple"
     env["IBUS_ENABLE_SYNC_MODE"] = os.environ.get("GTV_E2E_SYNC", env.get("IBUS_ENABLE_SYNC_MODE", "1"))
     return env
 

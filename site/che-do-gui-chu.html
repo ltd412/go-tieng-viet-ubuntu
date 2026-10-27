@@ -53,7 +53,7 @@ Cách đặt xem ở <a href="su-dung.html#cau-hinh">trang cách dùng</a>.</p>
 <h2 id="thanh-dia-chi">Thanh địa chỉ trình duyệt</h2>
 <p>Thanh địa chỉ có inline autocomplete: phần gợi ý sau con trỏ đang được chọn, nên BackSpace đầu tiên xóa gợi ý chứ không xóa chữ vừa gõ.
 Khi con trỏ nằm trong 80 px trên cùng của cửa sổ trình duyệt (Chrome, Chromium, Brave, Vivaldi, Edge, Opera, Firefox), GTV dùng
-<code>address_bar_mode</code> (mặc định <code>preedit</code>). Nếu đổi sang <code>backspace</code>, GTV forward thêm <code>Delete</code> trước BackSpace để bỏ phần gợi ý.</p>
+<code>address_bar_mode</code> (mặc định <code>backspace</code>): forward thêm <code>Delete</code> trước BackSpace để bỏ phần gợi ý, và pause tối thiểu 60 ms vì Chrome cập nhật gợi ý chậm hơn lúc gõ. Phím <b>Tab</b> ở đây cũng do GTV forward lại: Tab đi qua bộ gõ không còn nhận gợi ý inline của Chrome, còn Tab do GTV forward thì nhận được. <code>preedit</code> không rớt chữ nhưng Chrome luôn gạch chân chữ đang gõ.</p>
 
 </div>
 </main>
