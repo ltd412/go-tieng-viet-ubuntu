@@ -18,6 +18,7 @@ ENGINE = "gtv-telex"
 OURS = {"gtv-telex", "gtv-vni"}
 SCHEMA = "org.gnome.desktop.input-sources"
 DRY = "--dry-run" in sys.argv
+SETTLE = float(os.environ.get("GTV_ACTIVATE_SETTLE", "3"))
 
 
 def say(msg):
@@ -92,6 +93,41 @@ def parse_sources(text):
         return None
 
 
+def read_current(run):
+    code, out = run("gsettings", "get", SCHEMA, "current")
+    try:
+        return int(out.split()[-1]) if code == 0 else None
+    except (ValueError, IndexError):
+        return None
+
+
+def write_sources(run, value, sources):
+    """Sets Input Sources and reads it back; a silent no-op (no dconf) must not look like success."""
+    for attempt in range(3):
+        code, _ = run("gsettings", "set", SCHEMA, "sources", value)
+        if DRY:
+            return True
+        code2, out = run("gsettings", "get", SCHEMA, "sources")
+        if code == 0 and code2 == 0 and parse_sources(out) == sources:
+            return True
+        time.sleep(1)
+    return False
+
+
+def select_source(run, index, count):
+    """Makes `index` current. Flipping away first forces GNOME Shell to re-activate the engine."""
+    for attempt in range(3):
+        if count > 1 and attempt == 0:
+            run("gsettings", "set", SCHEMA, "current", str(1 if index == 0 else 0))
+            if not DRY:
+                time.sleep(0.5)
+        code, _ = run("gsettings", "set", SCHEMA, "current", str(index))
+        if DRY or (code == 0 and read_current(run) == index):
+            return code == 0
+        time.sleep(1)
+    return False
+
+
 def main():
     args = [a for a in sys.argv[1:] if not a.startswith("--")]
     try:
@@ -111,15 +147,21 @@ def main():
     # A stale registry cache is the usual reason a freshly installed engine does not show up.
     run("ibus", "write-cache")
     code, out = run("ibus", "restart")
+    ready = False
     if code != 0:
         say(f"không restart được ibus ({out or 'không có thông báo'}); chạy tay: ibus restart")
     elif DRY:
         say("đã restart ibus")
     elif wait_for_engine(run):
+        ready = True
         say("đã restart ibus, engine Gõ Tiếng Việt đã sẵn sàng")
     else:
         say("đã restart ibus nhưng chưa thấy engine gtv-telex; nếu bộ gõ không hiện, "
             "đăng xuất rồi đăng nhập lại")
+    if ready:
+        # GNOME Shell re-reads the engine list after ibus comes back. A change to Input Sources
+        # made before that is ignored, which is why users with another IME had to redo it by hand.
+        time.sleep(SETTLE)
 
     code, out = run("gsettings", "get", SCHEMA, "sources")
     sources = parse_sources(out) if code == 0 else None
@@ -133,17 +175,18 @@ def main():
         sources = sources or [("xkb", "us")]
         sources.append(("ibus", ENGINE))
         value = "[" + ", ".join(f"('{t}', '{n}')" for t, n in sources) + "]"
-        code, out = run("gsettings", "set", SCHEMA, "sources", value)
-        if code != 0:
-            say(f"không đặt được Input Sources: {out}")
+        if not write_sources(run, value, sources):
+            say(f"không đặt được Input Sources. Chạy tay: gsettings set {SCHEMA} sources \"{value}\"")
             return 0
         say(f"đã thêm bộ gõ: {value}")
     else:
         say("bộ gõ đã có trong Input Sources")
 
     index = next(i for i, (t, n) in enumerate(sources) if t == "ibus" and n in OURS)
-    code, _ = run("gsettings", "set", SCHEMA, "current", str(index))
-    say("đã chọn Gõ Tiếng Việt làm bộ gõ hiện tại" if code == 0 else "chưa chọn được bộ gõ hiện tại")
+    if select_source(run, index, len(sources)):
+        say("đã chọn Gõ Tiếng Việt làm bộ gõ hiện tại")
+    else:
+        say(f"chưa chọn được bộ gõ hiện tại. Chạy tay: gsettings set {SCHEMA} current {index}")
     return 0
 
 
