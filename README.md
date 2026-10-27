@@ -34,8 +34,11 @@ Tải `ibus-gtv_<phiên bản>_amd64.deb` ở trang
 [Releases](https://github.com/ltd412/go-tieng-viet-ubuntu/releases), rồi:
 
 ```bash
-sudo apt install ./ibus-gtv_*_amd64.deb
+sudo dpkg -i ibus-gtv_*_amd64.deb
 ```
+
+`dpkg -i` không tự tải gói phụ thuộc. Nếu nó báo thiếu gói (ví dụ `python3-gi`, `gir1.2-adw-1`),
+chạy `sudo apt -f install` để cài nốt, rồi cài lại bằng lệnh trên.
 
 Gỡ: `sudo apt remove ibus-gtv`.
 

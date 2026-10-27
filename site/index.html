@@ -87,7 +87,8 @@
         <h3>Cách 1: file .deb</h3>
         <p>Bấm <b>Tải file .deb</b> ở đầu trang (<a data-deb href="https://github.com/ltd412/go-tieng-viet-ubuntu/releases/latest">hoặc tải trực tiếp tại đây</a>), rồi chạy:</p>
 <div class="codewrap"><pre><span class="c"># trong thư mục chứa file .deb</span>
-sudo apt install ./ibus-gtv_*_amd64.deb</pre><button class="copy" type="button">Sao chép</button></div>
+sudo dpkg -i ibus-gtv_*_amd64.deb</pre><button class="copy" type="button">Sao chép</button></div>
+        <p class="note" style="margin-top:10px">Nếu <code>dpkg</code> báo thiếu gói, chạy <code>sudo apt -f install</code> rồi cài lại.</p>
       </div>
       <div class="step">
         <h3>Cách 2: build từ mã nguồn</h3>
