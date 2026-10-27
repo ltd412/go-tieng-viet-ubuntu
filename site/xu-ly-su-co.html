@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Xử lý sự cố – Gõ Tiếng Việt</title>
+<meta name="description" content="Cách xử lý các sự cố thường gặp của Gõ Tiếng Việt và các giới hạn đã biết.">
+<link rel="icon" href="gtv.svg" type="image/svg+xml">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="nav">
+  <div class="wrap">
+    <a class="brand" href="index.html"><img src="gtv.svg" alt="" width="30" height="30"> Gõ Tiếng Việt</a>
+    <nav>
+      <a href="index.html#cai-dat" class="hide-sm">Cài đặt</a>
+      <a href="su-dung.html">Hướng dẫn</a>
+      <a href="xu-ly-su-co.html" class="hide-md cur">Xử lý sự cố</a>
+      <a href="https://github.com/ltd412/go-tieng-viet-ubuntu" class="hide-sm">GitHub</a>
+      <button class="theme" id="theme" type="button" aria-label="Đổi giao diện sáng/tối" title="Đổi giao diện sáng/tối"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 4a8 8 0 0 1 0 16z" fill="currentColor"/></svg></button>
+    </nav>
+  </div>
+</header>
+
+<main class="doc">
+<div class="wrap">
+<h1>Xử lý sự cố và giới hạn</h1>
+<p class="lead">Những lỗi thường gặp, cách bật bộ gõ bằng dòng lệnh và các giới hạn đã biết.</p>
+<div class="tabs">
+  <a href="su-dung.html">Cách dùng</a>
+  <a href="che-do-gui-chu.html">Chế độ gửi chữ</a>
+  <a href="xu-ly-su-co.html" class="cur">Xử lý sự cố</a>
+</div>
+
+<div class="toc"><b>Nội dung</b><ul>
+<li><a href="#xu-ly">Xử lý sự cố</a></li>
+<li><a href="#cai-dat-tay">Bật bộ gõ bằng dòng lệnh</a></li>
+<li><a href="#gioi-han">Giới hạn</a></li>
+</ul></div>
+
+<h2 id="xu-ly">Xử lý sự cố</h2>
+<div class="tablewrap"><table><thead><tr><th>Triệu chứng</th><th>Cách xử lý</th></tr></thead><tbody><tr><td>Thỉnh thoảng đảo hoặc mất chữ ở một ứng dụng</td><td>Tăng <code>pause_ms</code> lên 40–60. Nếu vẫn lỗi, đặt ứng dụng đó sang <code>preedit</code>.</td></tr><tr><td>Gõ <code>as</code> ra <code>aá</code> trong Files hoặc ứng dụng GTK4</td><td>Cài bản 0.1.1 trở lên: GTK4 tự dùng chế độ <code>surrounding</code>.</td></tr><tr><td>Gõ lệnh trong terminal bị đổi chữ (<code>off</code> thành <code>of</code>)</td><td>Tắt tiếng Việt cho terminal (trang <b>Ứng dụng</b> trong cửa sổ cài đặt).</td></tr><tr><td><code>www</code> thành <code>ww</code> ở thanh địa chỉ</td><td>Hành vi hoàn tác phím lặp như Unikey. Gõ <code>wwww</code>, hoặc dán URL.</td></tr><tr><td>Settings hiện <code>gtv-telex</code> thay vì tên</td><td>Đóng và mở lại Settings sau <code>ibus restart</code>, hoặc đăng xuất rồi đăng nhập.</td></tr><tr><td>Menu ứng dụng vẫn hiện tên cũ “GTV Preferences”</td><td>GNOME Shell còn cache. Nhấn Alt+F2, gõ <code>r</code>, Enter (X11), hoặc đăng nhập lại.</td></tr><tr><td>Không thấy bộ gõ trong danh sách</td><td><code>ibus write-cache &amp;&amp; ibus restart</code>, rồi <code>ibus list-engine | grep gtv</code>. Vẫn không thấy thì đăng xuất rồi đăng nhập.</td></tr><tr><td>Có engine nhưng chưa nằm trong Input Sources</td><td>Chạy <code>/usr/lib/ibus-gtv/gtv-activate</code>, hoặc làm tay theo mục bên dưới.</td></tr><tr><td>Gạch chân ở thanh địa chỉ Chrome</td><td>Đúng thiết kế (chế độ <code>preedit</code>). Đặt <code>address_bar_mode = "backspace"</code> để bỏ, đổi lại thì có thể rớt chữ.</td></tr><tr><td>Cần xem log</td><td>Đặt <code>GTV_LOG=trace</code> và <code>GTV_LOG_FILE=/tmp/gtv.log</code> vào môi trường của <code>ibus-daemon</code>, rồi <code>ibus restart</code>.</td></tr></tbody></table></div>
+
+<h2 id="cai-dat-tay">Bật bộ gõ bằng dòng lệnh</h2>
+<p>Trình cài đặt thường tự làm các bước này. Nếu cần làm tay, chạy trong phiên đồ họa của bạn (không cần <code>sudo</code>):</p>
+<div class="codewrap"><pre>ibus write-cache &amp;&amp; ibus restart          # nạp lại danh sách engine
+ibus list-engine | grep gtv               # phải thấy gtv-telex và gtv-vni
+
+# Thêm vào Input Sources (giữ các bộ gõ đang có), rồi chọn nó
+gsettings get org.gnome.desktop.input-sources sources
+gsettings set org.gnome.desktop.input-sources sources &quot;[(&#x27;xkb&#x27;, &#x27;us&#x27;), (&#x27;ibus&#x27;, &#x27;gtv-telex&#x27;)]&quot;
+gsettings set org.gnome.desktop.input-sources current 1</pre><button class="copy" type="button">Sao chép</button></div>
+<div class="callout">Giá trị <code>sources</code> phải gồm cả những bộ gõ mà <code>gsettings get</code> vừa in ra.
+<code>current</code> là vị trí, tính từ 0, của <code>gtv-telex</code> trong danh sách đó.</div>
+
+<h2 id="gioi-han">Giới hạn</h2>
+<ul>
+<li>Chỉ thử trên Ubuntu 24.04, X11, IBus 1.5.29, GNOME 46. <b>Wayland</b> không nhận diện được ứng dụng nên luôn dùng chế độ mặc định (<code>backspace</code>). Chưa test.</li>
+<li>Chưa thử: Firefox (snap), Qt/KDE, JetBrains, Warp, Lark, Postman, Cursor. Nếu một ứng dụng lỗi, xem bảng ở trên.</li>
+<li><code>select</code> và <code>forward-keys</code> chỉ để thử nghiệm.</li>
+<li>Từ tiếng Anh <i>trùng</i> với âm tiết Việt hợp lệ (<code>is</code> ra <code>í</code>, <code>or</code> ra <code>ỏ</code>) vẫn bị biến đổi, như Unikey và bộ gõ macOS. Chuyển input source hoặc gõ đôi phím dấu để hoàn tác.</li>
+<li>Chưa có phím tắt bật/tắt tiếng Việt riêng cho từng ứng dụng lúc đang gõ. Dùng danh sách trong cài đặt hoặc đổi input source.</li>
+<li>Chưa có Esc-to-revert và phím tắt bao dấu bằng ngoặc.</li>
+</ul>
+<p>Gặp lỗi khác? <a href="https://github.com/ltd412/go-tieng-viet-ubuntu/issues">Mở issue trên GitHub</a> kèm tên ứng dụng và phiên bản.</p>
+
+</div>
+</main>
+
+<footer>
+  <div class="wrap">
+    <span>Gõ Tiếng Việt · giấy phép MIT</span>
+    <span><a href="index.html">Trang chủ</a> · <a href="https://github.com/ltd412/go-tieng-viet-ubuntu">GitHub</a> · <a href="https://github.com/ltd412/go-tieng-viet-ubuntu/issues">Báo lỗi</a></span>
+  </div>
+</footer>
+
+<script src="site.js" defer></script>
+</body>
+</html>

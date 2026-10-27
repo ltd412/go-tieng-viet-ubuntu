@@ -88,7 +88,7 @@ của `gtv-telex` trong danh sách đó.
 
 ## Tài liệu
 
-- [Trang web giới thiệu](https://ltd412.github.io/go-tieng-viet-ubuntu/)
+- [Trang web giới thiệu](https://ltd412.github.io/go-tieng-viet-ubuntu/), có bản web của [cách dùng](https://ltd412.github.io/go-tieng-viet-ubuntu/su-dung.html), [chế độ gửi chữ](https://ltd412.github.io/go-tieng-viet-ubuntu/che-do-gui-chu.html) và [xử lý sự cố](https://ltd412.github.io/go-tieng-viet-ubuntu/xu-ly-su-co.html).
 - [Cách dùng và cấu hình](docs/su-dung.md): cửa sổ cài đặt, file cấu hình, bảng gõ Telex và VNI.
 - [Chế độ gửi chữ](docs/che-do-gui-chu.md): cách GTV đưa chữ vào từng loại ứng dụng.
 - [Xử lý sự cố và giới hạn](docs/xu-ly-su-co.md)

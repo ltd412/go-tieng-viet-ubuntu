@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cách dùng và cấu hình – Gõ Tiếng Việt</title>
+<meta name="description" content="Cửa sổ cài đặt, file cấu hình và bảng gõ Telex, VNI của Gõ Tiếng Việt.">
+<link rel="icon" href="gtv.svg" type="image/svg+xml">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="nav">
+  <div class="wrap">
+    <a class="brand" href="index.html"><img src="gtv.svg" alt="" width="30" height="30"> Gõ Tiếng Việt</a>
+    <nav>
+      <a href="index.html#cai-dat" class="hide-sm">Cài đặt</a>
+      <a href="su-dung.html" class="cur">Hướng dẫn</a>
+      <a href="xu-ly-su-co.html" class="hide-md">Xử lý sự cố</a>
+      <a href="https://github.com/ltd412/go-tieng-viet-ubuntu" class="hide-sm">GitHub</a>
+      <button class="theme" id="theme" type="button" aria-label="Đổi giao diện sáng/tối" title="Đổi giao diện sáng/tối"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 4a8 8 0 0 1 0 16z" fill="currentColor"/></svg></button>
+    </nav>
+  </div>
+</header>
+
+<main class="doc">
+<div class="wrap">
+<h1>Cách dùng và cấu hình</h1>
+<p class="lead">Cửa sổ cài đặt, file cấu hình và bảng gõ Telex, VNI.</p>
+<div class="tabs">
+  <a href="su-dung.html" class="cur">Cách dùng</a>
+  <a href="che-do-gui-chu.html">Chế độ gửi chữ</a>
+  <a href="xu-ly-su-co.html">Xử lý sự cố</a>
+</div>
+
+<div class="toc"><b>Nội dung</b><ul>
+<li><a href="#cua-so">Cửa sổ cài đặt</a></li>
+<li><a href="#terminal">Tắt tiếng Việt trong terminal</a></li>
+<li><a href="#cau-hinh">File cấu hình</a></li>
+<li><a href="#telex">Cách gõ Telex</a></li>
+<li><a href="#vni">Cách gõ VNI</a></li>
+</ul></div>
+
+<h2 id="cua-so">Cửa sổ cài đặt</h2>
+<p>Mở bằng một trong các cách sau:</p>
+<ul>
+<li>Activities, rồi gõ <b>Gõ Tiếng Việt</b>.</li>
+<li>Settings → Keyboard → Input Sources → ⋮ ở hàng bộ gõ → <b>Preferences</b>.</li>
+<li>Dòng lệnh: <code>/usr/lib/ibus-gtv/ibus-setup-gtv</code>.</li>
+</ul>
+<p>Cửa sổ có hai trang và <b>tự lưu</b> mỗi khi bạn đổi, vào <code>~/.config/gtv/config.toml</code>.</p>
+<div class="tablewrap"><table><thead><tr><th>Trang</th><th>Nội dung</th></tr></thead><tbody><tr><td><b>Chung</b></td><td>Kiểu dấu cũ/mới, gõ dấu tự do, kiểm tra chính tả, cách gửi chữ mặc định, độ trễ sau BackSpace, gạch chân preedit.</td></tr><tr><td><b>Ứng dụng</b></td><td>Cách gửi chữ riêng cho từng ứng dụng. Có các nút <i>Chọn ứng dụng bằng cách bấm vào cửa sổ</i>, <i>Thêm các terminal phổ biến (tắt tiếng Việt)</i> và <i>Thêm ứng dụng theo tên</i>.</td></tr></tbody></table></div>
+<div class="callout">Thay đổi có hiệu lực ở lần focus vào ô nhập kế tiếp: đổi cửa sổ hoặc click lại ô nhập.</div>
+
+<h2 id="terminal">Tắt tiếng Việt trong terminal</h2>
+<p>Vào trang <b>Ứng dụng</b>, bấm <b>Thêm các terminal phổ biến (tắt tiếng Việt)</b>. Hoặc sửa tay file cấu hình:</p>
+<div class="codewrap"><pre>[apps]
+&quot;gnome-terminal&quot; = &quot;off&quot;</pre><button class="copy" type="button">Sao chép</button></div>
+
+<h2 id="cau-hinh">File cấu hình</h2>
+<p>File <code>~/.config/gtv/config.toml</code>, mọi khóa đều tùy chọn. Xem mẫu ở
+<a href="https://github.com/ltd412/go-tieng-viet-ubuntu/blob/main/data/config.example.toml">config.example.toml</a>.</p>
+<div class="tablewrap"><table><thead><tr><th>Khóa</th><th>Mặc định</th><th>Ý nghĩa</th></tr></thead><tbody><tr><td><code>tone_style</code></td><td><code>"modern"</code></td><td><code>"modern"</code> = hòa, khỏe, thủy. <code>"old"</code> = hoà, khoẻ, thuỷ.</td></tr><tr><td><code>free_marking</code></td><td><code>true</code></td><td>Dấu mũ/móc đặt sau phụ âm cuối: <code>tieengs</code> ra <code>tiếng</code>.</td></tr><tr><td><code>spell_check</code></td><td><code>true</code></td><td>Từ không phải âm tiết Việt giữ nguyên phím đã gõ.</td></tr><tr><td><code>pause_ms</code></td><td><code>30</code></td><td>Chờ bao nhiêu ms sau khi forward BackSpace rồi mới commit. Tăng lên 40–60 nếu ứng dụng chậm và thỉnh thoảng đảo hoặc mất chữ.</td></tr><tr><td><code>preedit_underline</code></td><td><code>false</code></td><td>Gạch chân ở chế độ preedit. Chrome và Electron luôn vẽ gạch chân.</td></tr><tr><td><code>default_mode</code></td><td><code>"backspace"</code></td><td>Chế độ cho ứng dụng không nằm trong <code>[apps]</code>. Xem <a href="che-do-gui-chu.html">các chế độ gửi chữ</a>.</td></tr><tr><td><code>address_bar_mode</code></td><td><code>"preedit"</code></td><td>Chế độ khi con trỏ nằm trong thanh địa chỉ trình duyệt. Chrome tự gợi ý inline có thể ghi đè chữ giữa lúc xóa và commit, nên mặc định dùng preedit (có gạch chân). Đặt <code>"backspace"</code> nếu không muốn gạch chân.</td></tr><tr><td><code>[apps]</code></td><td>—</td><td><code>"&lt;chuỗi trong WM_CLASS&gt;" = "&lt;chế độ&gt;"</code>. Xem WM_CLASS bằng <code>xprop WM_CLASS</code> rồi bấm vào cửa sổ.</td></tr></tbody></table></div>
+<p>Ứng dụng GTK4 (như Files) tự dùng chế độ <code>surrounding</code>. Quy tắc <code>[apps]</code> hoặc <code>default_mode</code> của bạn sẽ ghi đè mặc định này.</p>
+
+<h2 id="telex">Cách gõ Telex</h2>
+<div class="tablewrap"><table><thead><tr><th>Gõ</th><th>Ra</th><th>Gõ</th><th>Ra</th></tr></thead><tbody><tr><td><code>aa</code> <code>ee</code> <code>oo</code></td><td>â ê ô</td><td><code>s</code> <code>f</code> <code>r</code> <code>x</code> <code>j</code></td><td>sắc, huyền, hỏi, ngã, nặng</td></tr><tr><td><code>aw</code></td><td>ă</td><td><code>z</code></td><td>xóa dấu thanh</td></tr><tr><td><code>ow</code> <code>uw</code> <code>w</code></td><td>ơ ư ư</td><td><code>dd</code></td><td>đ</td></tr><tr><td><code>Vieetj Nam</code></td><td>Việt Nam</td><td><code>duwocj</code></td><td>được</td></tr></tbody></table></div>
+<p>Gõ đôi phím dấu để hoàn tác như Unikey: <code>ff</code> ra <code>f</code>, <code>eee</code> ra <code>ee</code>.</p>
+
+<h2 id="vni">Cách gõ VNI</h2>
+<ul>
+<li><code>1 2 3 4 5</code> = sắc, huyền, hỏi, ngã, nặng.</li>
+<li><code>6</code> = â ê ô · <code>7</code> = ơ ư · <code>8</code> = ă · <code>9</code> = đ · <code>0</code> = xóa dấu.</li>
+</ul>
+<p>Ví dụ: <code>viet65</code> ra <code>việt</code>, <code>d9uoc75</code> ra <code>được</code>.</p>
+
+</div>
+</main>
+
+<footer>
+  <div class="wrap">
+    <span>Gõ Tiếng Việt · giấy phép MIT</span>
+    <span><a href="index.html">Trang chủ</a> · <a href="https://github.com/ltd412/go-tieng-viet-ubuntu">GitHub</a> · <a href="https://github.com/ltd412/go-tieng-viet-ubuntu/issues">Báo lỗi</a></span>
+  </div>
+</footer>
+
+<script src="site.js" defer></script>
+</body>
+</html>

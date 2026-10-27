@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Chế độ gửi chữ – Gõ Tiếng Việt</title>
+<meta name="description" content="Cách Gõ Tiếng Việt đưa chữ vào từng loại ứng dụng: backspace, surrounding, preedit, off.">
+<link rel="icon" href="gtv.svg" type="image/svg+xml">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="nav">
+  <div class="wrap">
+    <a class="brand" href="index.html"><img src="gtv.svg" alt="" width="30" height="30"> Gõ Tiếng Việt</a>
+    <nav>
+      <a href="index.html#cai-dat" class="hide-sm">Cài đặt</a>
+      <a href="su-dung.html">Hướng dẫn</a>
+      <a href="xu-ly-su-co.html" class="hide-md">Xử lý sự cố</a>
+      <a href="https://github.com/ltd412/go-tieng-viet-ubuntu" class="hide-sm">GitHub</a>
+      <button class="theme" id="theme" type="button" aria-label="Đổi giao diện sáng/tối" title="Đổi giao diện sáng/tối"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 4a8 8 0 0 1 0 16z" fill="currentColor"/></svg></button>
+    </nav>
+  </div>
+</header>
+
+<main class="doc">
+<div class="wrap">
+<h1>Chế độ gửi chữ</h1>
+<p class="lead">Cách GTV đưa chữ vào từng loại ứng dụng, và vì sao chọn chế độ mặc định.</p>
+<div class="tabs">
+  <a href="su-dung.html">Cách dùng</a>
+  <a href="che-do-gui-chu.html" class="cur">Chế độ gửi chữ</a>
+  <a href="xu-ly-su-co.html">Xử lý sự cố</a>
+</div>
+
+<h2 id="cac-che-do">Các chế độ</h2>
+<p>Bộ gõ không gạch chân phải <i>sửa</i> chữ đã nằm trong ứng dụng (<code>viet</code> + <code>s</code> ra <code>viét</code>).
+IBus có vài cách làm việc đó và không cách nào đúng ở mọi toolkit. Kết quả đo trên ứng dụng thật:</p>
+<div class="tablewrap"><table><thead><tr><th>Chế độ</th><th>Cách làm</th><th class="c">GTK3</th><th class="c">Terminal (VTE)</th><th>Chrome / VS Code</th></tr></thead><tbody><tr><td><code>backspace</code> <b>(mặc định)</b></td><td>forward BackSpace, chờ <code>pause_ms</code>, rồi CommitText</td><td class="c">✅</td><td class="c">✅</td><td>✅</td></tr><tr><td><code>surrounding</code></td><td>DeleteSurroundingText + CommitText. Mặc định cho ứng dụng GTK4</td><td class="c">✅</td><td class="c">–</td><td>❌ Chrome báo hỗ trợ nhưng bỏ qua lệnh xóa</td></tr><tr><td><code>forward-keys</code></td><td>mọi thứ (kể cả chữ) forward như phím</td><td class="c">✅</td><td class="c">✅</td><td>❌ bỏ keysym Unicode</td></tr><tr><td><code>select</code></td><td>forward Shift+Left rồi CommitText</td><td class="c">thử nghiệm</td><td class="c">thử nghiệm</td><td>thử nghiệm</td></tr><tr><td><code>preedit</code></td><td>chữ đang gõ nằm trong preedit</td><td class="c">✅</td><td class="c">✅</td><td>✅ (Chrome luôn vẽ gạch chân)</td></tr><tr><td><code>off</code></td><td>tắt tiếng Việt cho ứng dụng đó, phím đi thẳng</td><td class="c">✅</td><td class="c">✅</td><td>✅</td></tr></tbody></table></div>
+<p><code>backspace</code> là chế độ duy nhất đúng ở cả ba toolkit nên là mặc định. Nếu một ứng dụng lỗi, thử
+<code>"&lt;wm_class&gt;" = "preedit"</code> trong <code>[apps]</code>, rồi tăng <code>pause_ms</code>.
+Cách đặt xem ở <a href="su-dung.html#cau-hinh">trang cách dùng</a>.</p>
+
+<h2 id="vi-sao">Vì sao <code>backspace</code> của GTV chạy được khi các bộ gõ khác hỏng</h2>
+<p>Cùng một ý tưởng (BackSpace rồi commit) nhưng bốn chỗ khác biệt quyết định:</p>
+<ol>
+<li><b>Một đường ra duy nhất, có thứ tự.</b> Handler trả lời client ngay. Một thread riêng phát mọi signal theo hàng đợi, nên không có hai nơi cùng phát và đua nhau trên connection.</li>
+<li><b>Không bao giờ để phím “đi thẳng” (native).</b> Toolkit xếp phím native vào hàng đợi và xử lý <i>sau</i> các signal commit, nên chữ bị đảo hoặc mất. Mọi ký tự in được đều đi bằng CommitText. Phím không in được (Enter, mũi tên…) gặp lúc hàng đợi bận cũng được forward qua hàng đợi.</li>
+<li><b>Chờ đủ lâu sau khi forward phím.</b> Chrome và GTK xử lý phím forward <i>trễ hơn</i> commit gửi ngay sau đó. Sau mỗi lần forward, output kế tiếp chờ <code>pause_ms</code>, và các commit liền nhau được gộp thành một <code>CommitText</code>. Pause nằm ở thread phát, không chặn reply, nên đúng cả khi <code>IBUS_ENABLE_SYNC_MODE=1</code>.</li>
+<li><b>Bỏ qua tín hiệu giả do chính mình gây ra.</b> GTK gọi <code>Reset</code>, còn Chrome gửi <code>Reset</code> hoặc focus change mỗi khi xử lý một BackSpace, kể cả BackSpace do engine forward. Những tín hiệu này trong 200 ms sau phím forward của mình bị bỏ qua, nếu không engine quên từ đang gõ.</li>
+</ol>
+
+<h2 id="thanh-dia-chi">Thanh địa chỉ trình duyệt</h2>
+<p>Thanh địa chỉ có inline autocomplete: phần gợi ý sau con trỏ đang được chọn, nên BackSpace đầu tiên xóa gợi ý chứ không xóa chữ vừa gõ.
+Khi con trỏ nằm trong 80 px trên cùng của cửa sổ trình duyệt (Chrome, Chromium, Brave, Vivaldi, Edge, Opera, Firefox), GTV dùng
+<code>address_bar_mode</code> (mặc định <code>preedit</code>). Nếu đổi sang <code>backspace</code>, GTV forward thêm <code>Delete</code> trước BackSpace để bỏ phần gợi ý.</p>
+
+</div>
+</main>
+
+<footer>
+  <div class="wrap">
+    <span>Gõ Tiếng Việt · giấy phép MIT</span>
+    <span><a href="index.html">Trang chủ</a> · <a href="https://github.com/ltd412/go-tieng-viet-ubuntu">GitHub</a> · <a href="https://github.com/ltd412/go-tieng-viet-ubuntu/issues">Báo lỗi</a></span>
+  </div>
+</footer>
+
+<script src="site.js" defer></script>
+</body>
+</html>
