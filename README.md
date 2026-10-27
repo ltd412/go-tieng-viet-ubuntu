@@ -69,6 +69,21 @@ Nếu bạn không muốn trình cài đặt đổi cài đặt bàn phím, đ�
 bật thủ công ở **Settings → Keyboard → Input Sources → +** → *Vietnamese* → **Vietnamese (Telex)**
 (hoặc **VNI**), hoặc chạy lại phần tự động: `/usr/lib/ibus-gtv/gtv-activate`.
 
+Muốn tự làm bằng dòng lệnh (không cần `sudo`, chạy trong phiên đồ họa của bạn):
+
+```bash
+ibus write-cache && ibus restart          # nạp lại danh sách engine
+ibus list-engine | grep gtv               # phải thấy gtv-telex và gtv-vni
+
+# Thêm vào Input Sources (giữ các bộ gõ đang có), rồi chọn nó
+gsettings get org.gnome.desktop.input-sources sources
+gsettings set org.gnome.desktop.input-sources sources "[('xkb', 'us'), ('ibus', 'gtv-telex')]"
+gsettings set org.gnome.desktop.input-sources current 1
+```
+
+Giá trị trong `sources` phải gồm cả những bộ gõ `gsettings get` vừa in ra; `current` là vị trí (tính từ 0)
+của `gtv-telex` trong danh sách đó.
+
 Đổi giữa tiếng Anh và tiếng Việt bằng phím tắt của GNOME (mặc định **Super + Space**).
 
 ## Tài liệu

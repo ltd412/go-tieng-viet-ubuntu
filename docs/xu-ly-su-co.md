@@ -10,7 +10,8 @@
 | Gõ lệnh trong terminal bị đổi chữ (`off` → `of`) | Tắt tiếng Việt cho terminal (trang **Ứng dụng**) |
 | `www` thành `ww` ở thanh địa chỉ | Hành vi hoàn tác phím lặp như Unikey. Gõ `wwww`, hoặc dán URL |
 | Settings hiện `gtv-telex` thay vì tên | Đóng và mở lại Settings sau `ibus restart`, hoặc đăng xuất/đăng nhập |
-| Không thấy bộ gõ trong danh sách | `ibus restart`; kiểm tra `ibus list-engine \| grep gtv` |
+| Không thấy bộ gõ trong danh sách | `ibus write-cache && ibus restart`; kiểm tra `ibus list-engine \| grep gtv`. Vẫn không thấy thì đăng xuất/đăng nhập |
+| Có engine nhưng chưa nằm trong Input Sources | `/usr/lib/ibus-gtv/gtv-activate`, hoặc `gsettings set org.gnome.desktop.input-sources sources "[('xkb', 'us'), ('ibus', 'gtv-telex')]"` rồi `gsettings set org.gnome.desktop.input-sources current 1` |
 | Cần xem log | `GTV_LOG=trace GTV_LOG_FILE=/tmp/gtv.log` đặt vào môi trường của `ibus-daemon`, rồi `ibus restart` |
 
 ## Giới hạn
