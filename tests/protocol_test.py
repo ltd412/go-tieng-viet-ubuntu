@@ -153,6 +153,7 @@ def main():
         ("gtv-telex", "class off error www.example.com", "class of eror ww.example.com"),
         ("gtv-telex", "sudo apt update && git push origin main", "sudo apt update && git push origin main"),
         ("gtv-telex", "hoaf thuyr khoer ngoaif", "hòa thủy khỏe ngoài"),
+        ("gtv-telex", "dod dad dodo dduwocj", "đo đa đô được"),
         ("gtv-vni", "Vie6t5 Nam 2024 d9i", "Việt Nam 2024 đi"),
     ]
     failures = 0
