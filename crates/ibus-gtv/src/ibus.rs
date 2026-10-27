@@ -23,6 +23,10 @@ const CAP_SURROUNDING_TEXT: u32 = 1 << 5;
 const RESET_ECHO_WINDOW_MS: u64 = 200;
 /// Height of a browser's tab strip + toolbar; a caret above this line is in the address bar.
 const BROWSER_TOOLBAR_PX: i32 = 80;
+/// Shortest pause after forwarded keys while the caret is in a browser address bar. Chrome's inline
+/// autocomplete rewrites the field a moment after each edit; at 30 ms it still overwrote the
+/// replacement text now and then, at 60 ms it did not (omnibox e2e, through ibus-portal).
+const ADDRESS_BAR_MIN_PAUSE_MS: u64 = 60;
 /// Extra wait after a settle pause, so keys that arrive right behind it join the same commit.
 const COALESCE_GRACE_MS: u64 = 2;
 const ATTR_TYPE_UNDERLINE: u32 = 1;
@@ -107,6 +111,7 @@ impl Factory {
             browser: false,
             base_mode: Mode::Backspace,
             address_mode: Mode::Preedit,
+            base_pause: Duration::from_millis(30),
             in_toolbar: false,
             pause: Duration::from_millis(30),
             queue,
@@ -170,6 +175,8 @@ struct Engine {
     /// Mode chosen at focus-in for the focused app, and the one used in a browser address bar.
     base_mode: Mode,
     address_mode: Mode,
+    /// Pause outside the address bar; inside it the pause is at least `ADDRESS_BAR_MIN_PAUSE_MS`.
+    base_pause: Duration,
     in_toolbar: bool,
     pause: Duration,
     /// The only road to the client: one thread emits every signal, in order, so two senders can
@@ -325,7 +332,8 @@ impl Engine {
         self.underline = underline;
         self.browser = class.as_deref().is_some_and(is_browser);
         self.session.set_clear_suggestion(false);
-        self.pause = Duration::from_millis(pause_ms);
+        self.base_pause = Duration::from_millis(pause_ms);
+        self.pause = self.base_pause;
         let mode =
             if mode == Mode::Surrounding && !has_surrounding { Mode::Backspace } else { mode };
         self.base_mode = mode;
@@ -406,6 +414,13 @@ impl Engine {
         let top = self.shared.detector.as_ref().and_then(AppDetector::focused_top);
         let in_toolbar = top.is_some_and(|t| (0..BROWSER_TOOLBAR_PX).contains(&(y - t)));
         self.session.set_clear_suggestion(in_toolbar);
+        // Not tied to the mode switch below, which waits for an idle word: a focus change in the
+        // middle of a word resets the pause and it must come back with the next caret update.
+        self.pause = if in_toolbar {
+            self.base_pause.max(Duration::from_millis(ADDRESS_BAR_MIN_PAUSE_MS))
+        } else {
+            self.base_pause
+        };
         // The caret moved between the address bar and the page: switch modes, but only between
         // words so no typed text is stranded.
         if in_toolbar != self.in_toolbar && self.session.is_idle() {

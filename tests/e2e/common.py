@@ -72,6 +72,8 @@ def set_mode(app_key, mode):
     with open(os.path.join(d, "config.toml"), "w") as f:
         if "GTV_E2E_PAUSE" in os.environ:  # otherwise the engine's own default is what gets tested
             f.write(f'pause_ms = {os.environ["GTV_E2E_PAUSE"]}\n')
+        if "GTV_E2E_ABM" in os.environ:
+            f.write(f'address_bar_mode = "{os.environ["GTV_E2E_ABM"]}"\n')
         if mode != "default":  # "default" exercises the built-in policy
             f.write(f'[apps]\n"{app_key}" = "{mode}"\n')
     time.sleep(0.05)

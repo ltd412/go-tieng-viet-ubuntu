@@ -36,6 +36,10 @@ OMNIBOX_CASES = [
 ]
 
 
+# GTV_E2E_TAB=1: type the first letters of HOST, press Tab to accept the inline suggestion.
+TAB_CASES = [("vi", "viet.localhost:8123/"), ("viet", "viet.localhost:8123/")]
+
+
 class Quiet(http.server.SimpleHTTPRequestHandler):
     def do_GET(self):
         body = b"<title>viet</title><p>viet"
@@ -115,7 +119,7 @@ def main():
             time.sleep(3)
             d.activate(win)
             time.sleep(1)
-            for typed, want in OMNIBOX_CASES:
+            for typed, want in (TAB_CASES if os.environ.get("GTV_E2E_TAB") else OMNIBOX_CASES):
                 d.key("l", ctrl=True)
                 time.sleep(0.4)
                 d.key("BackSpace")
@@ -125,7 +129,14 @@ def main():
                 if os.environ.get("GTV_E2E_SHOT"):
                     d.shot(os.path.join(SANDBOX, f"omnibox-{mode}-{typed.replace(' ', '_')}.png"),
                            0, 0, 900, 140)
-                d.key("Delete")  # drops the inline suggestion; no-op when there is none
+                if os.environ.get("GTV_E2E_TAB"):
+                    d.key("\t")
+                    time.sleep(0.8)
+                    if os.environ.get("GTV_E2E_SHOT"):
+                        d.shot(os.path.join(SANDBOX, f"omnibox-tab-{mode}-{typed}.png"), 0, 0, 900, 330)
+                    d.key("l", ctrl=True)  # Tab may have moved focus; Ctrl+L selects the address bar again
+                else:
+                    d.key("Delete")  # drops the inline suggestion; no-op when there is none
                 time.sleep(0.3)
                 d.key("a", ctrl=True)
                 d.key("c", ctrl=True)

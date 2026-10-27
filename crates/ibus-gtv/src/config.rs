@@ -35,7 +35,9 @@ pub struct FileConfig {
     default_mode: Option<Mode>,
     /// Mode while the caret is in a browser address bar. Chrome answers the engine's
     /// BackSpace + commit with its inline autocomplete a moment later and can overwrite the
-    /// text, so the address bar defaults to `preedit`, which edits nothing behind its back.
+    /// text, so the address bar defaults to `preedit`, which edits nothing behind its back. Measured
+    /// through ibus-portal: `backspace` still lost characters in most omnibox runs even with the
+    /// longer address-bar pause, `preedit` did not.
     address_bar_mode: Option<Mode>,
     apps: HashMap<String, Mode>,
 }

@@ -40,6 +40,8 @@ DEFAULTS = {
     "default_mode": "backspace",
     "apps": {},
 }
+# Keys the window has no control for; kept as they are so saving never drops them.
+PASSTHROUGH = ["address_bar_mode"]
 
 
 def load():
@@ -49,7 +51,7 @@ def load():
             raw = tomllib.load(f)
     except (OSError, tomllib.TOMLDecodeError):
         return cfg
-    for k in DEFAULTS:
+    for k in [*DEFAULTS, *PASSTHROUGH]:
         if k in raw:
             cfg[k] = raw[k]
     cfg["apps"] = {str(k): str(v) for k, v in raw.get("apps", {}).items()}
@@ -69,6 +71,9 @@ def save(cfg):
         f"pause_ms = {int(cfg['pause_ms'])}",
         f"preedit_underline = {str(cfg['preedit_underline']).lower()}",
         f"default_mode = {q(cfg['default_mode'])}",
+    ]
+    lines += [f"{k} = {q(str(cfg[k]))}" for k in PASSTHROUGH if k in cfg]
+    lines += [
         "",
         "[apps]",
     ]
