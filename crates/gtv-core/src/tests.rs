@@ -392,3 +392,17 @@ fn circumflex_reaches_the_matching_vowel_behind_a_glide() {
     assert_eq!(live("khoeo"), "khoeo");
     assert_eq!(live("hoaa"), "hoaa");
 }
+
+#[test]
+fn stroke_reaches_back_over_the_vowels() {
+    assert_eq!(live("dod"), "đo");
+    assert_eq!(live("dad"), "đa");
+    assert_eq!(live("dodo"), "đô");
+    assert_eq!(live("dduwocj"), "được");
+    // Not a syllable with the stroke, so the typed keys stay.
+    assert_eq!(live("dead"), "dead");
+    // Doubling the key again undoes it, like every other mark.
+    assert_eq!(live("dodd"), "dod");
+    let strict = Config { free_marking: false, ..Config::default() };
+    assert_eq!(run(strict, "dod"), "dod");
+}

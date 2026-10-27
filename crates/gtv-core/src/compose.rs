@@ -230,8 +230,20 @@ impl State<'_> {
                 self.apply_hat(i, c, horn, breve, standalone)
             }
             Action::Stroke => {
+                // Telex: `dd` strokes the `d` just typed; with free marking a `d` typed after the
+                // vowels reaches back to the initial one, so `dod` -> `đo` like `baya` -> `bây`.
                 let p = match self.cfg.method {
-                    Method::Telex => self.letters.len().checked_sub(1),
+                    Method::Telex => {
+                        let last = self.letters.len().checked_sub(1);
+                        let reach = self.cfg.free_marking
+                            && self.has_vowel()
+                            && last.is_some_and(|l| self.letters[l].base != 'd');
+                        if reach {
+                            Some(0)
+                        } else {
+                            last
+                        }
+                    }
                     Method::Vni => (!self.letters.is_empty()).then_some(0),
                 };
                 match p.filter(|&p| self.letters[p].base == 'd') {

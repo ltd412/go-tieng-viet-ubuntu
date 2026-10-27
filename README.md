@@ -11,7 +11,7 @@ Gõ Tiếng Việt (GTV) là bộ gõ Telex và VNI cho **IBus**, viết bằng 
 - **Gõ không gạch chân** ở mọi ứng dụng, chữ hiện ra ngay như đang gõ bình thường.
 - **Chạy tốt trong terminal, Chrome, VS Code** và thanh địa chỉ trình duyệt.
 - **Hoàn tác bằng phím lặp** như Unikey và macOS: `ff` → `f`, `eee` → `ee`.
-- **Gõ dấu tự do**: `tieengs`, `duwocj` đều ra đúng `tiếng`, `được`.
+- **Gõ dấu tự do**: `tieengs`, `duwocj`, `dod` đều ra đúng `tiếng`, `được`, `đo`.
 - **Nhận biết từ tiếng Anh**: `class`, `windows`… giữ nguyên khi không phải âm tiết tiếng Việt.
 - **Cài đặt riêng cho từng ứng dụng**, ví dụ tắt tiếng Việt trong terminal để gõ lệnh.
 - **Giao diện cài đặt** kiểu GNOME, tự lưu, chọn ứng dụng bằng cách bấm vào cửa sổ.
