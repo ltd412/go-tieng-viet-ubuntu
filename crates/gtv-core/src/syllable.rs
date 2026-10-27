@@ -87,7 +87,8 @@ pub(crate) fn is_plausible(letters: &[Letter], marks: &[Mark], parts: &Parts, to
         return false;
     }
     if parts.nucleus.is_empty() {
-        return parts.coda.is_empty();
+        // `đc`, `đk`: abbreviations without a vowel; the typed `dd` shows the intent.
+        return parts.coda.is_empty() || onset.to_lowercase() == "đ";
     }
     if onset == "q" || !NUCLEI.contains(&text(letters, marks, parts.nucleus.clone()).as_str()) {
         return false;

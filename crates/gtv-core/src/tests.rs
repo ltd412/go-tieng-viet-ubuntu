@@ -406,3 +406,8 @@ fn stroke_reaches_back_over_the_vowels() {
     let strict = Config { free_marking: false, ..Config::default() };
     assert_eq!(run(strict, "dod"), "dod");
 }
+
+#[test]
+fn stroked_d_without_vowel_stays_vietnamese() {
+    check(telex, &[("ddc", "đc"), ("ddk ", "đk "), ("Ddc", "Đc"), ("ddd", "dd")]);
+}
