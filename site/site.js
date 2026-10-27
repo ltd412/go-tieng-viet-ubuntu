@@ -17,4 +17,21 @@
       }, function () { b.textContent = "Chọn và chép tay"; });
     });
   });
+
+  // Point the download buttons straight at the newest .deb instead of the Releases page.
+  var debs = document.querySelectorAll("a[data-deb]");
+  if (debs.length && window.fetch) {
+    fetch("https://api.github.com/repos/ltd412/go-tieng-viet-ubuntu/releases/latest")
+      .then(function (r) { return r.ok ? r.json() : Promise.reject(); })
+      .then(function (rel) {
+        var a = (rel.assets || []).filter(function (x) { return /\.deb$/.test(x.name); })[0];
+        if (!a) return;
+        debs.forEach(function (el) {
+          el.href = a.browser_download_url;
+          el.setAttribute("download", a.name);
+          if (el.id === "dl") el.textContent = "Tải " + a.name;
+        });
+      })
+      .catch(function () {});
+  }
 })();
