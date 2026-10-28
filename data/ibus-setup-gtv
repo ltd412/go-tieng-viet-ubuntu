@@ -41,7 +41,7 @@ DEFAULTS = {
     "apps": {},
 }
 # Keys the window has no control for; kept as they are so saving never drops them.
-PASSTHROUGH = ["address_bar_mode"]
+PASSTHROUGH = ["address_bar_mode", "check_updates"]
 
 
 def load():
@@ -72,7 +72,11 @@ def save(cfg):
         f"preedit_underline = {str(cfg['preedit_underline']).lower()}",
         f"default_mode = {q(cfg['default_mode'])}",
     ]
-    lines += [f"{k} = {q(str(cfg[k]))}" for k in PASSTHROUGH if k in cfg]
+    lines += [
+        f"{k} = {str(cfg[k]).lower() if isinstance(cfg[k], bool) else q(str(cfg[k]))}"
+        for k in PASSTHROUGH
+        if k in cfg
+    ]
     lines += [
         "",
         "[apps]",

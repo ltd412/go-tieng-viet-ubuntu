@@ -1,0 +1,9 @@
+[Unit]
+Description=Check for a newer Gõ Tiếng Việt release
+
+[Service]
+Type=oneshot
+ExecStart=/usr/lib/ibus-gtv/gtv-update check
+Nice=19
+IOSchedulingClass=idle
+TimeoutStartSec=300

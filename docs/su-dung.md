@@ -43,6 +43,19 @@ Trang **Ứng dụng → Thêm các terminal phổ biến (tắt tiếng Việt)
 | `address_bar_mode` | `"backspace"` | Chế độ khi con trỏ nằm trong thanh địa chỉ trình duyệt. Mặc định không gạch chân, giữ gợi ý inline và phím Tab nhận gợi ý. Pause ở đây tối thiểu 60 ms. Đặt `"preedit"` nếu vẫn thỉnh thoảng rớt chữ (Chrome luôn gạch chân chữ ở chế độ này) |
 | `[apps]` | — | `"<chuỗi trong WM_CLASS>" = "<chế độ>"`. Xem WM_CLASS bằng `xprop WM_CLASS` rồi bấm vào cửa sổ |
 
+## Thông báo bản mới
+
+Gói `.deb` kèm một timer systemd của user (`gtv-update.timer`): mỗi ngày một lần, nó hỏi GitHub bản mới nhất và so với bản đang cài. Có bản mới thì hiện một thông báo (mỗi phiên bản chỉ báo một lần) với nút **Cập nhật ngay**. Bấm nút thì tải `.deb`, kiểm tra sha256 rồi cài bằng `pkexec dpkg -i`, nên luôn hỏi mật khẩu quản trị và không bao giờ tự cài ngầm. Cài xong IBus được khởi động lại.
+
+Tốn tài nguyên không đáng kể: không có tiến trình nào chạy nền, mỗi ngày chỉ một lần chạy khoảng một giây với một request HTTPS nhỏ (priority thấp nhất), offline thì bỏ qua.
+
+```
+/usr/lib/ibus-gtv/gtv-update check     # kiểm tra ngay
+/usr/lib/ibus-gtv/gtv-update install   # tải và cài bản mới nhất
+```
+
+Tắt kiểm tra: thêm `check_updates = false` vào `config.toml`, hoặc `systemctl --user disable --now gtv-update.timer`.
+
 ## Cách gõ
 
 ### Telex

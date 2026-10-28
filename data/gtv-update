@@ -1,0 +1,169 @@
+#!/usr/bin/python3
+"""Tells the user when a newer GTV release exists and installs it on request.
+
+    gtv-update check      # run daily by the systemd user timer: one HTTPS request, then exits
+    gtv-update install    # download the newest .deb, verify its sha256, install with pkexec
+    gtv-update --version
+
+Nothing stays resident. The check asks GitHub for the latest release, compares it with the
+installed engine and, when newer, shows a desktop notification once per version. Installing is
+always the user's choice (the notification button, or `gtv-update install`), and root is only
+obtained through pkexec's own password dialog. `check_updates = false` in config.toml turns the
+check off.
+"""
+import hashlib
+import json
+import os
+import subprocess
+import sys
+import tempfile
+import urllib.request
+
+REPO = os.environ.get("GTV_UPDATE_REPO", "ltd412/go-tieng-viet-ubuntu")
+API = os.environ.get("GTV_UPDATE_API", f"https://api.github.com/repos/{REPO}/releases/latest")
+ENGINE = os.environ.get("GTV_ENGINE", "/usr/lib/ibus-gtv/ibus-engine-gtv")
+TIMEOUT = 15
+ACTION_WAIT = 120
+
+
+def say(msg):
+    print(f"gtv-update: {msg}", flush=True)
+
+
+def config_dir():
+    return os.path.join(os.environ.get("XDG_CONFIG_HOME", os.path.expanduser("~/.config")), "gtv")
+
+
+def state_path():
+    base = os.environ.get("XDG_CACHE_HOME", os.path.expanduser("~/.cache"))
+    return os.path.join(base, "gtv", "update.json")
+
+
+def enabled():
+    try:
+        import tomllib
+        with open(os.path.join(config_dir(), "config.toml"), "rb") as f:
+            return tomllib.load(f).get("check_updates", True) is not False
+    except Exception:
+        return True
+
+
+def version_tuple(text):
+    parts = []
+    for p in text.lstrip("v").split("."):
+        digits = "".join(c for c in p if c.isdigit())
+        if not digits:
+            break
+        parts.append(int(digits))
+    return tuple(parts)
+
+
+def installed_version():
+    out = subprocess.run([ENGINE, "--version"], capture_output=True, text=True, timeout=10).stdout
+    return out.split()[-1]
+
+
+def latest_release():
+    req = urllib.request.Request(API, headers={"Accept": "application/vnd.github+json",
+                                               "User-Agent": "gtv-update"})
+    with urllib.request.urlopen(req, timeout=TIMEOUT) as r:
+        rel = json.load(r)
+    for a in rel.get("assets", []):
+        if a["name"].endswith(".deb"):
+            digest = (a.get("digest") or "").removeprefix("sha256:")
+            return {"version": rel["tag_name"].lstrip("v"), "url": a["browser_download_url"],
+                    "name": a["name"], "sha256": digest, "page": rel.get("html_url", "")}
+    return None
+
+
+def newer():
+    """The latest release when it is newer than what is installed, else None."""
+    rel = latest_release()
+    if rel and version_tuple(rel["version"]) > version_tuple(installed_version()):
+        return rel
+    return None
+
+
+def notified_version():
+    try:
+        with open(state_path()) as f:
+            return json.load(f).get("notified", "")
+    except Exception:
+        return ""
+
+
+def remember(version):
+    os.makedirs(os.path.dirname(state_path()), exist_ok=True)
+    with open(state_path(), "w") as f:
+        json.dump({"notified": version}, f)
+
+
+def install(rel):
+    if not rel["sha256"]:
+        say("bản phát hành không có mã sha256 để kiểm tra, không tự cài. Tải tay tại " + rel["page"])
+        return 1
+    with tempfile.TemporaryDirectory(prefix="gtv-update-") as tmp:
+        path = os.path.join(tmp, rel["name"])
+        say(f"đang tải {rel['name']}")
+        with urllib.request.urlopen(rel["url"], timeout=60) as r, open(path, "wb") as f:
+            h = hashlib.sha256()
+            while chunk := r.read(1 << 16):
+                h.update(chunk)
+                f.write(chunk)
+        if h.hexdigest() != rel["sha256"]:
+            say("sha256 không khớp, hủy cài đặt")
+            return 1
+        os.chmod(tmp, 0o755)
+        os.chmod(path, 0o644)
+        say("cài đặt (cần mật khẩu quản trị)")
+        return subprocess.run(["pkexec", "dpkg", "-i", path]).returncode
+
+
+def notify(rel):
+    """Shows the notification; returns True when the user pressed the update button."""
+    cmd = ["notify-send", "--app-name=Gõ Tiếng Việt", "--icon=input-keyboard",
+           "--action=update=Cập nhật ngay", "--wait", f"--expire-time={ACTION_WAIT * 1000}",
+           f"Có bản GTV mới: {rel['version']}",
+           "Cập nhật sẽ khởi động lại IBus trong giây lát."]
+    try:
+        out = subprocess.run(cmd, capture_output=True, text=True, timeout=ACTION_WAIT + 10).stdout
+    except (OSError, subprocess.TimeoutExpired):
+        return False
+    return out.strip() == "update"
+
+
+def check():
+    if not enabled():
+        return 0
+    try:
+        rel = newer()
+    except Exception as e:  # offline, rate limited, GitHub down: try again tomorrow
+        say(f"không kiểm tra được: {e}")
+        return 0
+    if not rel or notified_version() == rel["version"]:
+        return 0
+    remember(rel["version"])
+    if notify(rel):
+        return install(rel)
+    return 0
+
+
+def main():
+    cmd = sys.argv[1] if len(sys.argv) > 1 else "check"
+    if cmd == "--version":
+        print("gtv-update 1")
+        return 0
+    if cmd == "check":
+        return check()
+    if cmd == "install":
+        rel = newer()
+        if not rel:
+            say("đang là bản mới nhất")
+            return 0
+        return install(rel)
+    print(__doc__)
+    return 2
+
+
+if __name__ == "__main__":
+    sys.exit(main())
