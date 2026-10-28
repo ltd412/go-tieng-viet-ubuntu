@@ -70,11 +70,18 @@ async fn run() -> zbus::Result<()> {
 
 fn main() {
     // ibus-daemon discards the stderr of engines it spawns, hence the optional log file.
-    let log_env = env_logger::Env::default().filter_or("GTV_LOG", "info");
+    // A `debug` file next to config.toml turns on full tracing into `engine.log` beside it, for
+    // people who cannot set environment variables on an engine the daemon spawns.
+    let dir = config::FileConfig::path().with_file_name("");
+    let debug = dir.join("debug").exists();
+    let log_env =
+        env_logger::Env::default().filter_or("GTV_LOG", if debug { "trace" } else { "info" });
     let mut logger = env_logger::Builder::from_env(log_env);
     logger.format_timestamp_millis();
-    if let Some(file) = std::env::var_os("GTV_LOG_FILE")
-        .and_then(|p| std::fs::OpenOptions::new().create(true).append(true).open(p).ok())
+    let log_file =
+        std::env::var_os("GTV_LOG_FILE").or_else(|| debug.then(|| dir.join("engine.log").into()));
+    if let Some(file) =
+        log_file.and_then(|p| std::fs::OpenOptions::new().create(true).append(true).open(p).ok())
     {
         logger.target(env_logger::Target::Pipe(Box::new(file)));
     }
