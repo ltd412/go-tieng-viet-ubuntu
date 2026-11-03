@@ -32,6 +32,8 @@ pub struct Config {
     pub free_marking: bool,
     /// Fall back to the typed keys when the result is not a plausible Vietnamese syllable.
     pub spell_check: bool,
+    /// Telex: a `w` typed where no vowel precedes it becomes `ư` (`w` → ư, `nw` → nư).
+    pub w_to_u: bool,
 }
 
 impl Default for Config {
@@ -41,6 +43,7 @@ impl Default for Config {
             tone_style: ToneStyle::Modern,
             free_marking: true,
             spell_check: true,
+            w_to_u: true,
         }
     }
 }

@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 """Preferences for GTV: edits ~/.config/gtv/config.toml. The engine reloads the file by itself,
 so every change is saved at once and takes effect the next time a text field gets focus."""
+import json
 import os
 import subprocess
 import sys
@@ -8,6 +9,8 @@ import threading
 import tomllib
 
 PATH = os.path.join(os.environ.get("XDG_CONFIG_HOME", os.path.expanduser("~/.config")), "gtv", "config.toml")
+
+UPDATER = os.path.join(os.path.dirname(os.path.realpath(__file__)), "gtv-update")
 
 MODES = ["backspace", "off", "preedit", "surrounding", "select", "forward-keys"]
 SHORT = {
@@ -34,6 +37,7 @@ TERMINALS = ["gnome-terminal", "kitty", "alacritty", "xterm", "konsole", "tilix"
 DEFAULTS = {
     "tone_style": "modern",
     "free_marking": True,
+    "w_to_u": True,
     "spell_check": True,
     "pause_ms": 30,
     "preedit_underline": False,
@@ -41,6 +45,7 @@ DEFAULTS = {
     "apps": {},
 }
 # Keys the window has no control for; kept as they are so saving never drops them.
+UPDATE_MODE = "--update" in sys.argv
 PASSTHROUGH = ["address_bar_mode", "check_updates"]
 
 
@@ -67,6 +72,7 @@ def save(cfg):
         "# Tạo bởi ibus-setup-gtv. Engine tự nạp lại khi file đổi.",
         f"tone_style = {q(cfg['tone_style'])}",
         f"free_marking = {str(cfg['free_marking']).lower()}",
+        f"w_to_u = {str(cfg['w_to_u']).lower()}",
         f"spell_check = {str(cfg['spell_check']).lower()}",
         f"pause_ms = {int(cfg['pause_ms'])}",
         f"preedit_underline = {str(cfg['preedit_underline']).lower()}",
@@ -134,6 +140,14 @@ def main():
             self.free.connect("notify::active", lambda r, _p: self.set("free_marking", r.get_active()))
             typing.add(self.free)
 
+            self.wtu = Adw.SwitchRow(
+                title="Gõ w thành ư",
+                subtitle="Telex: w đứng một mình hoặc sau phụ âm ra ư (w → ư, nw → nư). "
+                         "Tắt nếu bạn gõ nhiều chữ w tiếng Anh; uw, ow, aw vẫn ra ư, ơ, ă.",
+                active=bool(self.cfg["w_to_u"]))
+            self.wtu.connect("notify::active", lambda r, _p: self.set("w_to_u", r.get_active()))
+            typing.add(self.wtu)
+
             self.spell = Adw.SwitchRow(
                 title="Kiểm tra chính tả",
                 subtitle="Từ không phải âm tiết tiếng Việt (class, windows…) giữ nguyên phím đã gõ.",
@@ -186,7 +200,141 @@ def main():
                 row.add_suffix(Gtk.Image.new_from_icon_name("go-next-symbolic"))
                 row.connect("activated", cb)
                 actions.add(row)
+            self.build_update_page(Adw, Gtk)
             self.refresh_apps()
+            if UPDATE_MODE:
+                self.set_visible_page(self.update_page)
+            if UPDATE_MODE or self.cfg.get("check_updates", True) is not False:
+                self.check_update()
+
+        # ---- updates ----
+        def build_update_page(self, Adw, Gtk):
+            self.update_page = Adw.PreferencesPage(title="Cập nhật", icon_name="software-update-available-symbolic")
+            self.add(self.update_page)
+            group = Adw.PreferencesGroup(
+                title="Cập nhật",
+                description="Tải bản mới từ GitHub Releases, kiểm tra mã sha256 rồi cài bằng sudo. "
+                            "Cài xong IBus tự khởi động lại.")
+            self.update_page.add(group)
+            self.ver_row = Adw.ActionRow(title="Phiên bản đang dùng", subtitle="…")
+            group.add(self.ver_row)
+            self.latest_row = Adw.ActionRow(title="Bản mới nhất", subtitle="Chưa kiểm tra")
+            self.check_btn = Gtk.Button(label="Kiểm tra", valign=Gtk.Align.CENTER)
+            self.check_btn.connect("clicked", lambda *_: self.check_update())
+            self.latest_row.add_suffix(self.check_btn)
+            self.update_btn = Gtk.Button(label="Cập nhật", valign=Gtk.Align.CENTER, visible=False)
+            self.update_btn.add_css_class("suggested-action")
+            self.update_btn.connect("clicked", lambda *_: self.start_install())
+            self.latest_row.add_suffix(self.update_btn)
+            group.add(self.latest_row)
+            self.progress = Gtk.ProgressBar(visible=False, margin_top=8)
+            group.add(self.progress)
+
+            options = Adw.PreferencesGroup()
+            self.update_page.add(options)
+            self.auto = Adw.SwitchRow(
+                title="Tự kiểm tra bản mới",
+                subtitle="Mỗi ngày một lần, hiện thông báo khi có bản mới. Không có tiến trình nào chạy nền.",
+                active=self.cfg.get("check_updates", True) is not False)
+            self.auto.connect("notify::active", lambda r, _p: self.set("check_updates", r.get_active()))
+            options.add(self.auto)
+
+        def updater(self, *args, stdin=None):
+            return subprocess.Popen([UPDATER, *args], stdin=subprocess.PIPE if stdin is not None else None,
+                                    stdout=subprocess.PIPE, text=True)
+
+        def check_update(self):
+            self.check_btn.set_sensitive(False)
+            self.latest_row.set_subtitle("Đang kiểm tra…")
+
+            def work():
+                try:
+                    out = self.updater("status").communicate(timeout=30)[0]
+                    info = json.loads(out.strip().splitlines()[-1])
+                except Exception as e:
+                    info = {"error": str(e)}
+                GLib.idle_add(self.on_status, info)
+
+            threading.Thread(target=work, daemon=True).start()
+
+        def on_status(self, info):
+            self.check_btn.set_sensitive(True)
+            if info.get("current"):
+                self.ver_row.set_subtitle(info["current"])
+            if info.get("error"):
+                self.latest_row.set_subtitle(f"Không kiểm tra được: {info['error']}")
+            elif info.get("available"):
+                self.latest_row.set_subtitle(f"Có bản mới: {info['latest']}")
+                self.update_btn.set_label(f"Cập nhật lên {info['latest']}")
+                self.update_btn.set_visible(True)
+            else:
+                self.latest_row.set_subtitle("Bạn đang dùng bản mới nhất")
+                self.update_btn.set_visible(False)
+            return False
+
+        def start_install(self, password=None, wrong=False):
+            self.update_btn.set_sensitive(False)
+            self.check_btn.set_sensitive(False)
+            self.progress.set_visible(True)
+            self.progress.set_fraction(0)
+            self.latest_row.set_subtitle("Đang tải…")
+
+            def work():
+                args = ["install"] + (["--password-stdin"] if password is not None else [])
+                proc = self.updater(*args, stdin=password)
+                if password is not None:
+                    proc.stdin.write(password + "\n")
+                    proc.stdin.close()
+                last = ""
+                for line in proc.stdout:
+                    last = line.strip()
+                    GLib.idle_add(self.on_install_line, last)
+                proc.wait()
+                if not last:
+                    GLib.idle_add(self.on_install_line, "ERROR gtv-update không chạy được")
+
+            threading.Thread(target=work, daemon=True).start()
+
+        def on_install_line(self, line):
+            word, _, rest = line.partition(" ")
+            if word == "PROGRESS":
+                self.progress.set_fraction(int(rest) / 100)
+            elif word == "INSTALLING":
+                self.progress.pulse()
+                self.latest_row.set_subtitle("Đang cài đặt…")
+            elif word in ("NEED_PASSWORD", "WRONG_PASSWORD"):
+                self.install_stopped()
+                self.ask_password(word == "WRONG_PASSWORD")
+            elif word == "ERROR":
+                self.install_stopped()
+                self.latest_row.set_subtitle(f"Cập nhật lỗi: {rest}")
+                self.update_btn.set_visible(True)
+            elif word == "DONE":
+                self.latest_row.set_subtitle("Đã cập nhật, đang mở lại cửa sổ…")
+                subprocess.Popen(["/bin/sh", "-c", 'sleep 2; exec "$0" --update', sys.argv[0]],
+                                 start_new_session=True)
+                self.get_application().quit()
+            return False
+
+        def install_stopped(self):
+            self.progress.set_visible(False)
+            self.update_btn.set_sensitive(True)
+            self.check_btn.set_sensitive(True)
+
+        def ask_password(self, wrong):
+            from gi.repository import Adw, Gtk
+            entry = Gtk.PasswordEntry(show_peek_icon=True, activates_default=True)
+            dialog = Adw.MessageDialog(
+                transient_for=self, heading="Cần quyền quản trị",
+                body=("Mật khẩu không đúng, nhập lại. " if wrong else "") +
+                     "Nhập mật khẩu sudo để cài bản mới. Mật khẩu chỉ gửi cho sudo, không được lưu.")
+            dialog.set_extra_child(entry)
+            dialog.add_response("cancel", "Hủy")
+            dialog.add_response("ok", "Cài đặt")
+            dialog.set_response_appearance("ok", Adw.ResponseAppearance.SUGGESTED)
+            dialog.set_default_response("ok")
+            dialog.connect("response", lambda _d, r: r == "ok" and self.start_install(entry.get_text()))
+            dialog.present()
 
         # ---- state ----
         def set(self, key, value):

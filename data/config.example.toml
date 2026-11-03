@@ -7,6 +7,10 @@ tone_style = "modern"
 # Cho phép phím mũ/dấu áp ngược qua phụ âm cuối: "viete" -> "viêt", "tieengs" -> "tiếng"
 free_marking = true
 
+# Telex: w đứng một mình hoặc sau phụ âm ra ư ("w" -> "ư", "nw" -> "nư"). false: giữ nguyên chữ w
+# (uw, ow, aw vẫn ra ư, ơ, ă)
+w_to_u = true
+
 # Từ không phải âm tiết tiếng Việt hợp lệ (text, class, off, www...) được trả về đúng phím đã gõ
 spell_check = true
 

@@ -264,7 +264,7 @@ impl State<'_> {
                 self.frozen = true;
                 return false;
             }
-            if !self.has_vowel() {
+            if self.cfg.w_to_u && !self.has_vowel() {
                 self.roles.push(Role::Letter(self.letters.len()));
                 self.letters.push(Letter {
                     base: 'u',

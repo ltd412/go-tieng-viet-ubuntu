@@ -177,6 +177,15 @@ fn remove_tone_with_z() {
 }
 
 #[test]
+fn standalone_w_stays_w_when_w_to_u_is_off() {
+    let off = |s: &str| run(Config { w_to_u: false, ..Config::default() }, s);
+    for (typed, want) in [("w", "w"), ("nw", "nw"), ("thw", "thw"), ("www", "www"), ("uw", "ư"),
+                          ("ow", "ơ"), ("aw", "ă"), ("duwocj", "dược"), ("nguwowif", "người")] {
+        assert_eq!(off(typed), want, "{typed}");
+    }
+}
+
+#[test]
 fn standalone_w_is_u_horn() {
     check(telex, &[("w", "ư"), ("W", "Ư"), ("nw", "nư"), ("thw", "thư"), ("wf", "ừ")]);
 }

@@ -36,6 +36,7 @@ Trang **Ứng dụng → Thêm các terminal phổ biến (tắt tiếng Việt)
 |---|---|---|
 | `tone_style` | `"modern"` | `"modern"` = hòa, khỏe, thủy · `"old"` = hoà, khoẻ, thuỷ |
 | `free_marking` | `true` | Dấu mũ/móc đặt sau phụ âm cuối: `tieengs` → `tiếng` |
+| `w_to_u` | `true` | Telex: `w` đứng một mình hoặc sau phụ âm ra `ư` (`nw` → `nư`). `false` giữ nguyên chữ `w`; `uw`, `ow`, `aw` vẫn ra `ư`, `ơ`, `ă` |
 | `spell_check` | `true` | Từ không phải âm tiết Việt giữ nguyên phím đã gõ |
 | `pause_ms` | `30` | Chờ bao nhiêu ms sau khi forward BackSpace rồi mới commit. Tăng lên 40–60 nếu app chậm và thỉnh thoảng đảo/mất chữ |
 | `preedit_underline` | `false` | Gạch chân ở chế độ preedit (Chrome/Electron luôn vẽ gạch chân) |
@@ -43,18 +44,18 @@ Trang **Ứng dụng → Thêm các terminal phổ biến (tắt tiếng Việt)
 | `address_bar_mode` | `"backspace"` | Chế độ khi con trỏ nằm trong thanh địa chỉ trình duyệt. Mặc định không gạch chân, giữ gợi ý inline và phím Tab nhận gợi ý. Pause ở đây tối thiểu 60 ms. Đặt `"preedit"` nếu vẫn thỉnh thoảng rớt chữ (Chrome luôn gạch chân chữ ở chế độ này) |
 | `[apps]` | — | `"<chuỗi trong WM_CLASS>" = "<chế độ>"`. Xem WM_CLASS bằng `xprop WM_CLASS` rồi bấm vào cửa sổ |
 
-## Thông báo bản mới
+## Cập nhật
 
-Gói `.deb` kèm một timer systemd của user (`gtv-update.timer`): mỗi ngày một lần, nó hỏi GitHub bản mới nhất và so với bản đang cài. Có bản mới thì hiện một thông báo (mỗi phiên bản chỉ báo một lần) với nút **Cập nhật ngay**. Bấm nút thì tải `.deb`, kiểm tra sha256 rồi cài bằng `pkexec dpkg -i`, nên luôn hỏi mật khẩu quản trị và không bao giờ tự cài ngầm. Cài xong IBus được khởi động lại.
+Cửa sổ cài đặt có trang **Cập nhật** (cũng mở được bằng `ibus-setup-gtv --update`): hiện phiên bản đang dùng, bản mới nhất trên GitHub, nút **Kiểm tra** và nút **Cập nhật lên x.y.z** khi có bản mới. Bấm nút thì tải `.deb` kèm thanh tiến trình, kiểm tra sha256 rồi cài bằng `sudo dpkg -i`. Nếu sudo cần mật khẩu, cửa sổ hỏi mật khẩu (chỉ gửi cho sudo, không lưu); máy không có sudo thì dùng hộp thoại `pkexec`. Cài xong IBus khởi động lại và cửa sổ tự mở lại.
 
-Tốn tài nguyên không đáng kể: không có tiến trình nào chạy nền, mỗi ngày chỉ một lần chạy khoảng một giây với một request HTTPS nhỏ (priority thấp nhất), offline thì bỏ qua.
+Ngoài ra có thông báo nền: timer systemd của user (`gtv-update.timer`) chạy mỗi ngày một lần, hỏi GitHub bản mới nhất và hiện một thông báo (mỗi phiên bản chỉ báo một lần) có nút mở trang Cập nhật. Không có tiến trình nào chạy thường trực, mỗi ngày một request HTTPS nhỏ ở priority thấp nhất, offline thì bỏ qua.
 
 ```
-/usr/lib/ibus-gtv/gtv-update check     # kiểm tra ngay
-/usr/lib/ibus-gtv/gtv-update install   # tải và cài bản mới nhất
+/usr/lib/ibus-gtv/gtv-update check     # kiểm tra và thông báo ngay
+/usr/lib/ibus-gtv/gtv-update status    # in phiên bản đang dùng / mới nhất (JSON)
 ```
 
-Tắt kiểm tra: thêm `check_updates = false` vào `config.toml`, hoặc `systemctl --user disable --now gtv-update.timer`.
+Tắt kiểm tra tự động: công tắc **Tự kiểm tra bản mới** ở trang Cập nhật, hoặc `check_updates = false` trong `config.toml`.
 
 ## Cách gõ
 

@@ -4,6 +4,7 @@
 //! tone_style = "modern"      # or "old"  (hòa/thủy vs hoà/thuỷ)
 //! free_marking = true
 //! spell_check = true
+//! w_to_u = true              # Telex: a lone `w` becomes ư
 //! pause_ms = 30              # wait after forwarded keys, before committing replacement text
 //! preedit_underline = false  # underline the word while composing in `preedit` mode
 //!
@@ -26,6 +27,7 @@ pub struct FileConfig {
     tone_style: Option<ToneStyleName>,
     free_marking: Option<bool>,
     spell_check: Option<bool>,
+    w_to_u: Option<bool>,
     /// Underline the word while it is composed in `preedit` mode. Off by default: the text
     /// then looks like ordinary typed text but is still replaced atomically.
     preedit_underline: Option<bool>,
@@ -88,6 +90,7 @@ impl FileConfig {
         }
         cfg.free_marking = self.free_marking.unwrap_or(cfg.free_marking);
         cfg.spell_check = self.spell_check.unwrap_or(cfg.spell_check);
+        cfg.w_to_u = self.w_to_u.unwrap_or(cfg.w_to_u);
         cfg
     }
 
