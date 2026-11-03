@@ -92,6 +92,14 @@ impl Session {
         }
     }
 
+    /// Typing settings re-read from the config file. Skipped while a word is being composed,
+    /// because swapping the settings drops it.
+    pub fn set_config(&mut self, cfg: Config) {
+        if self.is_idle() {
+            self.composer.set_config(cfg);
+        }
+    }
+
     /// No word is being composed, so the mode can change without losing text.
     pub fn is_idle(&self) -> bool {
         self.composer.is_empty()

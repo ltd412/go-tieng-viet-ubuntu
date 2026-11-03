@@ -108,6 +108,7 @@ impl Factory {
             caps: 0,
             path: path.clone(),
             underline: false,
+            method,
             browser: false,
             base_mode: Mode::Backspace,
             address_mode: Mode::Backspace,
@@ -170,6 +171,7 @@ struct Engine {
     caps: u32,
     path: OwnedObjectPath,
     underline: bool,
+    method: Method,
     /// The focused app is a browser (see `is_browser`).
     browser: bool,
     /// Mode chosen at focus-in for the focused app, and the one used in a browser address bar.
@@ -319,14 +321,19 @@ impl Engine {
         let has_surrounding = self.caps & CAP_SURROUNDING_TEXT != 0;
         let gtk4 =
             self.shared.detector.as_ref().and_then(AppDetector::focused_pid).is_some_and(uses_gtk4);
-        let (mode, underline, pause_ms, address_mode) = self.shared.with_config(|c| {
+        let method = self.method;
+        let (mode, underline, pause_ms, address_mode, composer) = self.shared.with_config(|c| {
             (
                 c.mode_for(class.as_deref(), gtk4),
                 c.preedit_underline(),
                 c.pause_ms(),
                 c.address_bar_mode(),
+                c.composer_config(method),
             )
         });
+        // WHY: tone style, free marking, spell check and w_to_u used to be read only when the
+        // engine was created, so toggling them in the settings window did nothing until ibus restarted.
+        self.session.set_config(composer);
         self.address_mode = address_mode;
         self.in_toolbar = false;
         self.underline = underline;

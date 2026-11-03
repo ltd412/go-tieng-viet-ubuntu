@@ -450,6 +450,9 @@ def main():
 
 if __name__ == "__main__":
     if "--selftest" in sys.argv:
+        # Never touch the real config: write into a throwaway directory.
+        import tempfile
+        PATH = os.path.join(tempfile.mkdtemp(prefix="gtv-selftest-"), "gtv", "config.toml")
         save({**DEFAULTS, "tone_style": "old", "pause_ms": 20, "apps": {"foo": "off"}})
         print(load())
         sys.exit(0)

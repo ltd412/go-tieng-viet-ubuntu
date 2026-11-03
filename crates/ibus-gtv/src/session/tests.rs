@@ -330,6 +330,23 @@ fn address_bar_tab_is_forwarded_by_the_engine() {
 }
 
 #[test]
+fn settings_swapped_at_focus_apply_to_the_next_word() {
+    let typed = |session: &mut Session| {
+        let mut out = Vec::new();
+        for c in "w".chars() {
+            out.extend(session.process_key(KeyEvent { keyval: c as u32, keycode: 0, state: 0 }).1);
+        }
+        out.iter().any(|o| matches!(o, Out::Commit(t) if t == "ư"))
+            || out.iter().any(|o| matches!(o, Out::Preedit(Some(t)) if t == "ư"))
+    };
+    let mut session = Session::new(Config::default(), Mode::Backspace);
+    assert!(typed(&mut session), "w -> ư is the default");
+    let mut off = Session::new(Config::default(), Mode::Backspace);
+    off.set_config(Config { w_to_u: false, ..Config::default() });
+    assert!(!typed(&mut off), "w_to_u = false applies after set_config");
+}
+
+#[test]
 fn off_mode_passes_every_key_through() {
     let mut rig = Rig::new(Mode::Off, Config::default());
     rig.type_str("vieetj ddi");
