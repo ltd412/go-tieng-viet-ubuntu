@@ -7,7 +7,7 @@
 | Triệu chứng | Cách xử lý |
 |---|---|
 | Thỉnh thoảng đảo hoặc mất chữ ở một app | Tăng `pause_ms` lên 40–60. Nếu vẫn lỗi, đặt app đó sang `preedit` |
-| Terminal trong VS Code / Cursor / Orca (xterm.js) hay ra chữ lạ như `đưực` | xterm.js xử lý phím BackSpace và chữ commit không đồng bộ khi gõ nhanh. Đặt app đó sang `preedit` (trang **Ứng dụng**, ví dụ `code`, `cursor`). Orca đã được đặt sẵn `preedit`. Đổi lại thành gạch chân ở chữ đang gõ |
+| Terminal trong VS Code / Cursor / Orca (xterm.js) hay ra chữ lạ như `đưực` | xterm.js xử lý phím BackSpace và chữ commit không đồng bộ khi gõ nhanh. Nếu chấp nhận gạch chân, đặt app đó sang `preedit` (trang **Ứng dụng**, ví dụ `code`, `cursor`, `orca`). Đổi lại có thể thấy gạch chân ở chữ đang gõ, nên mặc định không đặt sẵn |
 | Gõ lệnh trong terminal bị đổi chữ (`off` → `of`) | Tắt tiếng Việt cho terminal (trang **Ứng dụng**) |
 | `www` thành `ww` ở thanh địa chỉ | Hành vi hoàn tác phím lặp như Unikey. Gõ `wwww`, hoặc dán URL |
 | Rớt chữ thỉnh thoảng ở thanh địa chỉ Chrome | Đặt `address_bar_mode = "preedit"` (không rớt chữ nhưng Chrome gạch chân chữ đang gõ), hoặc tăng `pause_ms` |

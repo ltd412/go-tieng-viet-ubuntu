@@ -42,7 +42,7 @@ def main():
         ["google-chrome", f"--user-data-dir={PROFILE}", "--no-first-run", "--no-default-browser-check",
          "--disable-extensions", "--disable-gpu", "--ozone-platform=x11", "--window-size=900,500",
          "--window-position=0,0", "--password-store=basic", "--allow-file-access-from-files",
-         f"file://{os.path.join(HERE, 'xterm.html')}"],
+         f"file://{os.path.join(HERE, 'xterm.html')}" + ("#events" if os.environ.get("GTV_E2E_EVENTS") else "")],
         env=app_env(), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, start_new_session=True)
     wanted, fails = [], 0
     try:
@@ -69,6 +69,10 @@ def main():
                 last, end = t, time.time() + 1.5
             time.sleep(0.2)
         raw = t[2:].rsplit(" - Google Chrome", 1)[0] if t.startswith("v:") else ""
+        events = ""
+        if "#" in raw:
+            raw, events = raw.split("#", 1)
+            print("events:", events[:1500])
         if os.environ.get("GTV_E2E_RAW"):
             print("raw:", repr("".join(chr(int(h, 16)) for h in raw.split(",") if h)))
         got = tty_lines("".join(chr(int(h, 16)) for h in raw.split(",") if h)) if raw else []

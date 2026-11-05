@@ -3,13 +3,28 @@
 <title>ready</title>
 <link rel="stylesheet" href="file:///usr/share/code/resources/app/node_modules/@xterm/xterm/css/xterm.css">
 <div id="t" style="width:700px;height:300px"></div>
-<script src="file:///usr/share/code/resources/app/node_modules/@xterm/xterm/lib/xterm.js"></script>
+<script src="file:///usr/share/code/resources/app/node_modules/@xterm/xterm/lib/xterm.js">  // GTV_E2E_EVENTS: also log the DOM key events xterm.js is given (D=keydown with key:keyCode:composing).
+  if (location.hash === '#events') {
+    const ev = [];
+    for (const t of ['keydown', 'compositionstart', 'compositionend']) {
+      document.addEventListener(t, e => { ev.push(t === 'keydown' ? 'D' + e.key + ':' + e.keyCode + ':' + (e.isComposing ? 1 : 0) : t[0] + t[11]); document.title = 'e:' + ev.join('|'); }, true);
+    }
+  }
+</script>
 <script>
   // What an xterm.js based terminal (VS Code, Cursor, Orca...) would send to the shell.
   const term = new Terminal({cols: 80, rows: 12});
   term.open(document.getElementById('t'));
   let log = '';
+  const ev = [];
+  const publish = () => { document.title = 'v:' + log + (location.hash === '#events' ? '#' + ev.join('|') : ''); };
   // Code points in hex: document.title would turn 0x7f and 0x0d into spaces.
-  term.onData(d => { log += [...d].map(c => c.codePointAt(0).toString(16)).join(',') + ','; document.title = 'v:' + log; });
+  term.onData(d => { log += [...d].map(c => c.codePointAt(0).toString(16)).join(',') + ','; publish(); });
+  if (location.hash === '#events') {
+    // D<key>:<keyCode>:<isComposing> = keydown that reached the page; c0/c1 = compositionstart/end.
+    for (const t of ['keydown', 'compositionstart', 'compositionend']) {
+      document.addEventListener(t, e => { ev.push(t === 'keydown' ? 'D' + e.key + ':' + e.keyCode + ':' + (e.isComposing ? 1 : 0) : 'c' + (t === 'compositionstart' ? 0 : 1)); publish(); }, true);
+    }
+  }
   term.focus();
 </script>
