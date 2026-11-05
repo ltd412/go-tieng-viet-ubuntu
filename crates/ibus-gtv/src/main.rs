@@ -68,24 +68,54 @@ async fn run() -> zbus::Result<()> {
     }
 }
 
+/// `GTV_LOG` pins the level; without it the level follows the `debug` file (see `follow_debug_flag`).
+fn pinned_level() -> Option<log::LevelFilter> {
+    std::env::var("GTV_LOG").ok().map(|v| v.parse().unwrap_or(log::LevelFilter::Info))
+}
+
+fn config_dir() -> PathBuf {
+    config::FileConfig::path().with_file_name("")
+}
+
+/// A `debug` file next to config.toml turns on full tracing into `engine.log` beside it, and
+/// deleting the file turns it off again. Checked at every focus change, so users can switch it on
+/// without restarting IBus (which would interrupt their typing).
+pub fn follow_debug_flag() {
+    static ON: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+    if pinned_level().is_some() {
+        return;
+    }
+    let dir = config_dir();
+    let want = dir.join("debug").exists();
+    if ON.swap(want, std::sync::atomic::Ordering::Relaxed) == want {
+        return;
+    }
+    if want {
+        // WHY: a trace left on for days must not fill the disk.
+        let log = dir.join("engine.log");
+        if std::fs::metadata(&log).is_ok_and(|m| m.len() > 10 << 20) {
+            let _ = std::fs::OpenOptions::new().write(true).truncate(true).open(&log);
+        }
+    }
+    log::set_max_level(if want { log::LevelFilter::Trace } else { log::LevelFilter::Info });
+    log::info!("tracing {}", if want { "on" } else { "off" });
+}
+
 fn main() {
-    // ibus-daemon discards the stderr of engines it spawns, hence the optional log file.
-    // A `debug` file next to config.toml turns on full tracing into `engine.log` beside it, for
-    // people who cannot set environment variables on an engine the daemon spawns.
-    let dir = config::FileConfig::path().with_file_name("");
-    let debug = dir.join("debug").exists();
-    let log_env =
-        env_logger::Env::default().filter_or("GTV_LOG", if debug { "trace" } else { "info" });
-    let mut logger = env_logger::Builder::from_env(log_env);
+    // ibus-daemon discards the stderr of engines it spawns, hence the log file.
+    let mut logger = env_logger::Builder::new();
+    logger.filter_level(pinned_level().unwrap_or(log::LevelFilter::Trace));
     logger.format_timestamp_millis();
     let log_file =
-        std::env::var_os("GTV_LOG_FILE").or_else(|| debug.then(|| dir.join("engine.log").into()));
-    if let Some(file) =
-        log_file.and_then(|p| std::fs::OpenOptions::new().create(true).append(true).open(p).ok())
-    {
+        std::env::var_os("GTV_LOG_FILE").unwrap_or_else(|| config_dir().join("engine.log").into());
+    if let Ok(file) = std::fs::OpenOptions::new().create(true).append(true).open(log_file) {
         logger.target(env_logger::Target::Pipe(Box::new(file)));
     }
     logger.init();
+    if pinned_level().is_none() {
+        log::set_max_level(log::LevelFilter::Info);
+    }
+    follow_debug_flag();
     if std::env::args().any(|a| a == "--version") {
         println!("ibus-engine-gtv {}", env!("CARGO_PKG_VERSION"));
         return;

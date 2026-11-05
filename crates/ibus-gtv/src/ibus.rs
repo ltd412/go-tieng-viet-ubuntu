@@ -317,6 +317,7 @@ impl Engine {
             log::trace!("focus change ignored: echo of our forwarded keys");
             return;
         }
+        crate::follow_debug_flag();
         let class = self.shared.detector.as_ref().and_then(AppDetector::focused_class);
         let has_surrounding = self.caps & CAP_SURROUNDING_TEXT != 0;
         let gtk4 =
