@@ -1,0 +1,15 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>ready</title>
+<link rel="stylesheet" href="file:///usr/share/code/resources/app/node_modules/@xterm/xterm/css/xterm.css">
+<div id="t" style="width:700px;height:300px"></div>
+<script src="file:///usr/share/code/resources/app/node_modules/@xterm/xterm/lib/xterm.js"></script>
+<script>
+  // What an xterm.js based terminal (VS Code, Cursor, Orca...) would send to the shell.
+  const term = new Terminal({cols: 80, rows: 12});
+  term.open(document.getElementById('t'));
+  let log = '';
+  // Code points in hex: document.title would turn 0x7f and 0x0d into spaces.
+  term.onData(d => { log += [...d].map(c => c.codePointAt(0).toString(16)).join(',') + ','; document.title = 'v:' + log; });
+  term.focus();
+</script>

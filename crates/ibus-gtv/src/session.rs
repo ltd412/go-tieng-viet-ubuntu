@@ -177,6 +177,18 @@ impl Session {
             return false;
         };
         match self.composer.push(c) {
+            Push::Boundary if self.mode == Mode::Preedit => {
+                // One commit for the word and the character after it: two commits in a row make
+                // xterm.js (VS Code, Cursor, Orca terminals) type the space twice.
+                let mut ended = Vec::new();
+                self.end_word(&mut ended, true);
+                match ended.first_mut() {
+                    Some(Out::Commit(text)) => text.push(c),
+                    _ => ended.insert(0, Out::Commit(c.to_string())),
+                }
+                out.extend(ended);
+                true
+            }
             Push::Boundary => {
                 self.end_word(out, true);
                 // Not passed through: a native key event is queued by the toolkit and would be

@@ -347,6 +347,20 @@ fn settings_swapped_at_focus_apply_to_the_next_word() {
 }
 
 #[test]
+fn preedit_word_and_boundary_char_are_one_commit() {
+    let mut session = Session::new(Config::default(), Mode::Preedit);
+    for c in "vieetj".chars() {
+        session.process_key(KeyEvent { keyval: c as u32, keycode: 0, state: 0 });
+    }
+    let (handled, outs) =
+        session.process_key(KeyEvent { keyval: ' ' as u32, keycode: 0, state: 0 });
+    assert!(handled);
+    let commits: Vec<_> = outs.iter().filter(|o| matches!(o, Out::Commit(_))).collect();
+    assert_eq!(commits, vec![&Out::Commit("việt ".into())]);
+    assert_eq!(outs.last(), Some(&Out::Preedit(None)));
+}
+
+#[test]
 fn off_mode_passes_every_key_through() {
     let mut rig = Rig::new(Mode::Off, Config::default());
     rig.type_str("vieetj ddi");

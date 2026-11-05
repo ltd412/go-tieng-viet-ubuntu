@@ -57,8 +57,14 @@ enum ToneStyleName {
 /// correct in every toolkit tried (GTK3, VTE, Chromium/Electron). `Surrounding` is cleaner where
 /// the client really implements it, but Chromium advertises the capability and then ignores
 /// DeleteSurroundingText, so it is only listed for apps verified to honour it.
-const BUILTIN_APPS: &[(&str, Mode)] =
-    &[("gnome-text-editor", Mode::Surrounding), ("gedit", Mode::Surrounding)];
+const BUILTIN_APPS: &[(&str, Mode)] = &[
+    ("gnome-text-editor", Mode::Surrounding),
+    ("gedit", Mode::Surrounding),
+    // Orca runs its shells (pi, ...) in xterm.js. With BackSpace + commit, xterm.js garbles words
+    // whenever keys arrive faster than ~pause_ms + 25 ms apart (đưực, ...); composing in preedit is
+    // atomic and measured clean at 25 keys/s (tests/e2e/stress_xterm.py).
+    ("orca", Mode::Preedit),
+];
 
 impl FileConfig {
     pub fn path() -> PathBuf {
