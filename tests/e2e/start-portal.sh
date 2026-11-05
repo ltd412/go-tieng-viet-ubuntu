@@ -4,7 +4,9 @@
 SANDBOX="${GTV_SANDBOX:?set GTV_SANDBOX}"
 mkdir -p "$SANDBOX/run"
 if [ -f "$SANDBOX/run/portal-bus" ] && [ -f "$SANDBOX/run/portal.pid" ] && kill -0 "$(cat "$SANDBOX/run/portal.pid")" 2>/dev/null; then exit 0; fi
-ADDR=$(dbus-daemon --session --fork --print-address 2>/dev/null)
+OUT=$(dbus-daemon --session --fork --print-address=1 --print-pid=1 2>/dev/null)
+ADDR=$(echo "$OUT" | grep "^unix:" | head -1)
+echo "$OUT" | grep -E "^[0-9]+$" | head -1 > "$SANDBOX/run/portal-bus.pid"
 echo "$ADDR" > "$SANDBOX/run/portal-bus"
 DBUS_SESSION_BUS_ADDRESS="$ADDR" setsid -f /usr/libexec/ibus-portal >"$SANDBOX/run/portal.log" 2>&1 < /dev/null
 sleep 1

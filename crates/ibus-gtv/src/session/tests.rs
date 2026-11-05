@@ -375,3 +375,50 @@ fn four_e_then_backspace_then_space_keeps_two() {
         assert_eq!(rig.shown(), "ee ", "{mode:?}");
     }
 }
+
+/// Random typing with BackSpace: the text before the word must never be touched and the screen
+/// the session believes in must equal what the application shows.
+#[test]
+fn fuzz_backspace_never_eats_text_before_the_word() {
+    let keys: Vec<u32> = "aaeeoodwsfrxjzbnmctghqAEOD1,. ".chars().map(|c| c as u32).collect();
+    let mut seed = 0x2545_f491_4f6c_dd1du64;
+    let mut next = move || {
+        seed ^= seed << 13;
+        seed ^= seed >> 7;
+        seed ^= seed << 17;
+        seed
+    };
+    for mode in [Mode::Backspace, Mode::Surrounding, Mode::Select, Mode::ForwardKeys] {
+        for round in 0..4000 {
+            let mut rig = Rig::new(mode, Config::default());
+            const PREFIX: &str = "XYZ XYZ XYZ XYZ XYZ XYZ ";
+            rig.app.text = PREFIX.chars().collect();
+            // BackSpace with no word in progress is the application's own and may eat the prefix.
+            let mut own_deletes = 0;
+            let mut log = Vec::new();
+            for _ in 0..(3 + next() % 14) {
+                let r = next() % 100;
+                let key = if r < 22 { KEY_BACKSPACE } else { keys[(next() as usize) % keys.len()] };
+                log.push(if key == KEY_BACKSPACE { '<' } else { char::from_u32(key).unwrap() });
+                if key == KEY_BACKSPACE && (rig.session.is_idle() || rig.session.screen.is_empty())
+                {
+                    own_deletes += 1;
+                }
+                rig.press(key, 0);
+                let shown = rig.shown();
+                let keep = &PREFIX[..PREFIX.len().saturating_sub(own_deletes)];
+                assert!(
+                    shown.ends_with(&rig.session.screen),
+                    "{mode:?} round {round}: screen {:?} out of step after {:?}: {shown:?}",
+                    rig.session.screen,
+                    log.iter().collect::<String>()
+                );
+                assert!(
+                    shown.starts_with(keep),
+                    "{mode:?} round {round}: prefix damaged after {:?}: {shown:?}",
+                    log.iter().collect::<String>()
+                );
+            }
+        }
+    }
+}

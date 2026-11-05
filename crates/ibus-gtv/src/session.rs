@@ -212,6 +212,22 @@ impl Session {
         if self.composer.is_empty() {
             return false;
         }
+        // WHY: keys that leave nothing on screen (`oj` then `z` removes the tone) stay in the
+        // composer. A BackSpace then belongs to the text before the word; consuming it would delete
+        // that text's last character through our forwarded BackSpace.
+        let shown = if self.mode == Mode::Preedit {
+            !self.composer.display().is_empty()
+        } else {
+            !self.screen.is_empty()
+        };
+        if !shown {
+            self.composer.clear();
+            self.screen.clear();
+            if self.mode == Mode::Preedit {
+                out.push(Out::Preedit(None));
+            }
+            return false;
+        }
         self.composer.backspace();
         if self.mode == Mode::Preedit {
             let shown = (!self.composer.is_empty()).then(|| self.composer.display().to_string());
