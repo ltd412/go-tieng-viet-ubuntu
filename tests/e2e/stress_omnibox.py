@@ -13,8 +13,8 @@ import time
 
 from common import *  # noqa: F401,F403
 
-MODE, N = sys.argv[1], int(sys.argv[2])
-SEED = int(sys.argv[3]) if len(sys.argv) > 3 else 5
+MODE, N = (sys.argv[1], int(sys.argv[2])) if __name__ == "__main__" else (None, 0)
+SEED = int(sys.argv[3]) if __name__ == "__main__" and len(sys.argv) > 3 else 5
 DELAY = float(os.environ.get("GTV_E2E_DELAY", "0.04"))
 PROFILE = os.path.join(SANDBOX, "chrome-omnibox-profile")
 HOSTS = ["dantri.com.vn", "nhatot.com", "nguoiduatin.vn", "khoahoc.vn", "cafef.vn", "vnexpress.net",
@@ -110,4 +110,5 @@ def main():
     print(f"{fails} failure(s) of {N}", flush=True)
 
 
-main()
+if __name__ == "__main__":
+    main()
